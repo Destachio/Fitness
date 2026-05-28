@@ -4,10 +4,10 @@ import { el, icon } from './ui.js';
 import { getPlan } from './store.js';
 
 const ROUTES = [
-  { hash: '#/', view: views.dashboard, nav: 'dashboard', label: 'Home', icon: 'dashboard' },
-  { hash: '#/today', view: views.today, nav: 'today', label: 'Workout', icon: 'dumbbell' },
-  { hash: '#/plan', view: views.plan, nav: 'plan', label: 'Plan', icon: 'calendar' },
-  { hash: '#/parent', view: views.parent, nav: 'parent', label: 'Parent', icon: 'gear' },
+  { hash: '#/', view: views.dashboard, nav: 'dashboard', label: 'Base', icon: 'dashboard' },
+  { hash: '#/today', view: views.today, nav: 'today', label: 'Train', icon: 'dumbbell' },
+  { hash: '#/plan', view: views.plan, nav: 'plan', label: 'Briefing', icon: 'calendar' },
+  { hash: '#/parent', view: views.parent, nav: 'parent', label: 'Command', icon: 'gear' },
 ];
 
 const root = document.getElementById('app');

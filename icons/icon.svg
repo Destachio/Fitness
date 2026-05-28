@@ -10,11 +10,17 @@
     </filter>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <g fill="#22d3ff" filter="url(#glow)">
-    <rect x="146" y="240" width="220" height="32" rx="16"/>
-    <rect x="120" y="190" width="34" height="132" rx="14"/>
-    <rect x="86"  y="208" width="32" height="96"  rx="13"/>
-    <rect x="358" y="190" width="34" height="132" rx="14"/>
-    <rect x="394" y="208" width="32" height="96"  rx="13"/>
+  <g filter="url(#glow)">
+    <g fill="none" stroke="#2fe6ff" stroke-width="3" opacity="0.85">
+      <circle cx="256" cy="256" r="174"/>
+      <path d="M256 64v36M256 412v36M64 256h36M412 256h36"/>
+    </g>
+    <g fill="#2fe6ff">
+      <rect x="146" y="240" width="220" height="32" rx="16"/>
+      <rect x="120" y="190" width="34" height="132" rx="14"/>
+      <rect x="86"  y="208" width="32" height="96"  rx="13"/>
+      <rect x="358" y="190" width="34" height="132" rx="14"/>
+      <rect x="394" y="208" width="32" height="96"  rx="13"/>
+    </g>
   </g>
 </svg>

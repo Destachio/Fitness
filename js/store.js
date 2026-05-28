@@ -48,7 +48,29 @@ export function getPlan() {
     if (!getSettings().startDate) {
       saveSettings({ startDate: new Date().toISOString().slice(0, 10) });
     }
+  } else {
+    plan = migratePlan(plan);
   }
+  return plan;
+}
+
+// Additively bring an existing (possibly customised) plan up to the current
+// default version — e.g. drop in the cardio finishers — without wiping edits.
+function migratePlan(plan) {
+  if (plan.version === DEFAULT_PLAN.version) return plan;
+  let changed = false;
+  for (const defDay of DEFAULT_PLAN.days) {
+    const day = plan.days.find((d) => d.id === defDay.id);
+    if (!day) continue;
+    for (const defEx of defDay.exercises) {
+      if (defEx.type === 'cardio' && !day.exercises.some((e) => e.id === defEx.id)) {
+        day.exercises.push(structuredClone(defEx));
+        changed = true;
+      }
+    }
+  }
+  plan.version = DEFAULT_PLAN.version;
+  write(KEYS.plan, plan);
   return plan;
 }
 export function savePlan(plan) {
@@ -147,7 +169,7 @@ export function nextScheduled() {
 export function sessionVolume(log) {
   let vol = 0;
   for (const e of log.entries) {
-    if (e.type === 'time') continue;
+    if (e.type !== 'reps') continue; // weighted lifts only (skip time/cardio)
     for (const s of e.sets) {
       const w = parseFloat(s.weight) || 0;
       const r = parseInt(s.reps, 10) || 0;
@@ -157,23 +179,26 @@ export function sessionVolume(log) {
   return Math.round(vol);
 }
 
-// Best (heaviest) working set weight for an exercise across all logs, in time order.
+// Per-session progress for an exercise, in time order. For weighted lifts this
+// is the heaviest working set; for time/cardio it's the best minutes/seconds.
 export function exerciseHistory(exerciseId) {
   const points = [];
   for (const log of getLogs()) {
     if (!log.completed) continue;
     const entry = log.entries.find((e) => e.exerciseId === exerciseId);
     if (!entry) continue;
-    let best = 0;
-    let bestReps = 0;
-    for (const s of entry.sets) {
-      if (!s.done) continue;
-      const w = parseFloat(s.weight) || 0;
-      const r = parseInt(s.reps, 10) || 0;
-      if (w > best || (w === best && r > bestReps)) { best = w; bestReps = r; }
-    }
-    if (best > 0 || entry.type === 'time') {
-      points.push({ date: log.date, value: entry.type === 'time' ? maxReps(entry) : best, reps: bestReps });
+    if (entry.type === 'reps') {
+      let best = 0, bestReps = 0;
+      for (const s of entry.sets) {
+        if (!s.done) continue;
+        const w = parseFloat(s.weight) || 0;
+        const r = parseInt(s.reps, 10) || 0;
+        if (w > best || (w === best && r > bestReps)) { best = w; bestReps = r; }
+      }
+      if (best > 0) points.push({ date: log.date, value: best, reps: bestReps });
+    } else {
+      const v = maxReps(entry); // seconds (time) or minutes (cardio)
+      if (v > 0) points.push({ date: log.date, value: v, reps: v });
     }
   }
   return points;
@@ -227,8 +252,10 @@ export function deleteBodyweight(id) {
 }
 
 // ---- Personal bests ----
-// Best working set inside one logged exercise entry.
+// Best working set inside one logged exercise entry. Cardio is excluded from
+// personal bests (it's tracked as a chart, not a "beat your record" lift).
 function bestEntryValue(entry) {
+  if (entry.type === 'cardio') return { value: 0, reps: 0 };
   let value = 0, reps = 0;
   for (const s of entry.sets) {
     if (!s.done) continue;

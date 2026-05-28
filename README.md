@@ -1,8 +1,9 @@
-# 💪 Gym Tracker
+# 🎯 Field Ops Fitness
 
 A mobile-first, installable web app to help a young athlete get fit in the gym:
-follow a 4-week plan, log every set, and watch progress on a dashboard.
-Dark theme with neon-blue accents.
+run a 4-week "mission", log every set, and watch progress on a dashboard.
+Tactical black-ops look — near-black gunmetal UI, neon-cyan HUD accents, a
+reticle app icon, and a monospace readout feel.
 
 Built as a **zero-dependency PWA** — plain HTML/CSS/JS, no build step, no backend.
 All data is stored **on the device** (browser `localStorage`), so it works fully
@@ -21,8 +22,9 @@ offline once installed.
   Beat it during a workout and a "PB!" tag lights up live; finish the session and
   you get a celebration. Recent PBs are flagged **NEW** on the dashboard.
 - **4-week default plan** — full-body, 3 days/week (A/B/C), tuned for a teen
-  beginner at a commercial gym. The 4 weeks ramp up automatically (reps then an
-  extra set).
+  beginner at a commercial gym. Each session ends with a **cardio finisher**
+  (row / incline walk / bike intervals) whose duration ramps up over the weeks.
+  Strength sets/reps also progress automatically (reps, then an extra set).
 - **Parent mode (PIN protected)** — fully customise the plan: rename days, add/
   remove/edit exercises, change sets/reps/rest and coaching notes. Also set the
   athlete's name, weight unit (kg/lb), and start date.

@@ -2,7 +2,7 @@
 import * as S from './store.js';
 import { progressRing, lineChart, barChart } from './charts.js';
 import { el, clear, icon, toast, fmtDate } from './ui.js';
-import { PROGRESSION, PROGRAM_WEEKS } from './data.js';
+import { PROGRESSION, PROGRAM_WEEKS, targetFor } from './data.js';
 
 const go = (hash) => { location.hash = hash; };
 
@@ -28,13 +28,13 @@ export function dashboard() {
   const done = S.completedCount();
   const total = S.TOTAL_SESSIONS;
 
-  wrap.appendChild(header(`Hey, ${s.athleteName} 👋`, done >= total ? 'Program complete — legend!' : 'Let’s get after it today.'));
+  wrap.appendChild(header(`Operative // ${s.athleteName}`, done >= total ? 'Mission accomplished — outstanding work.' : 'Gear up. Let’s execute today’s mission.'));
 
   // Progress ring + quick stats
   const top = el('div.dash-top');
   top.appendChild(el('div.ring-card', {}, [
-    progressRing(done, total, { label: `${done}/${total}`, sub: 'sessions' }),
-    el('div.ring-cap', { text: 'Program progress' }),
+    progressRing(done, total, { label: `${done}/${total}`, sub: 'ops' }),
+    el('div.ring-cap', { text: 'Mission progress' }),
   ]));
 
   const thisWeek = (() => {
@@ -56,7 +56,7 @@ export function dashboard() {
     wrap.appendChild(el('button.cta', { onclick: () => startSession(next.dayId, next.week) }, [
       icon('dumbbell'),
       el('span', {}, [
-        el('strong', { text: `Start ${next.dayName.split('·')[0].trim()}` }),
+        el('strong', { text: `Deploy · ${next.dayName.split('·')[0].trim()}` }),
         el('em', { text: `Week ${next.week} · ${next.dayName.split('·')[1]?.trim() || ''}` }),
       ]),
     ]));
@@ -64,8 +64,8 @@ export function dashboard() {
     wrap.appendChild(el('div.card.done-card', {}, [
       icon('trophy'),
       el('div', {}, [
-        el('strong', { text: '4-week program complete!' }),
-        el('p.sub', { text: 'Start it again from the Plan tab, or build a custom one in Parent mode.' }),
+        el('strong', { text: 'Mission complete — 4 weeks down!' }),
+        el('p.sub', { text: 'Redeploy from the Briefing tab, or build a custom op in Command.' }),
       ]),
     ]));
   }
@@ -113,8 +113,10 @@ function exerciseProgressCard() {
     const ex = exes.find((x) => x.id === select.value) || exes[0];
     const pts = S.exerciseHistory(select.value).map((p) => ({ date: p.date, value: p.value }));
     clear(body);
-    body.appendChild(lineChart(pts, { unit: ex && ex.type === 'time' ? 's' : ` ${S.getSettings().weightUnit}` }));
-    body.appendChild(el('p.hint', { text: ex && ex.type === 'time' ? 'Best hold time per session.' : 'Heaviest working set per session.' }));
+    const cunit = ex && ex.type === 'time' ? 's' : ex && ex.type === 'cardio' ? ' min' : ` ${S.getSettings().weightUnit}`;
+    body.appendChild(lineChart(pts, { unit: cunit }));
+    const chint = ex && ex.type === 'time' ? 'Best hold time per session.' : ex && ex.type === 'cardio' ? 'Minutes of cardio per session.' : 'Heaviest working set per session.';
+    body.appendChild(el('p.hint', { text: chint }));
   };
   select.addEventListener('change', draw);
   card.appendChild(select);
@@ -220,7 +222,7 @@ function currentWeek() {
 // ---------------- TODAY ----------------
 export function today() {
   const wrap = el('div.screen');
-  wrap.appendChild(header('Today’s workout', 'Pick a session to start logging.'));
+  wrap.appendChild(header('Today’s mission', 'Select an op and start logging.'));
   const next = S.nextScheduled();
   const plan = S.getPlan();
   const wk = currentWeek();
@@ -246,7 +248,7 @@ export function today() {
     });
     card.appendChild(ul);
     card.appendChild(el('button.btn.primary', { onclick: () => startSession(day.id, wk) }, [
-      icon('dumbbell', { size: 18 }), el('span', { text: `Start · Week ${wk}` }),
+      icon('dumbbell', { size: 18 }), el('span', { text: `Deploy · Week ${wk}` }),
     ]));
     wrap.appendChild(card);
   });
@@ -254,12 +256,9 @@ export function today() {
 }
 
 function targetLabel(ex, week) {
-  const { sets, reps } = S.newSession ? targetForLocal(ex, week) : { sets: ex.sets, reps: ex.reps };
+  const { sets, reps } = targetFor(ex, week);
+  if (ex.type === 'cardio') return `${reps} min`;
   return ex.type === 'time' ? `${sets} × ${reps}s` : `${sets} × ${reps}`;
-}
-function targetForLocal(ex, week) {
-  const prog = PROGRESSION.find((p) => p.week === week) || PROGRESSION[0];
-  return { sets: ex.sets + prog.addSets, reps: ex.reps + prog.addReps };
 }
 
 function startSession(dayId, week) {
@@ -298,7 +297,7 @@ export function session(id) {
     card.appendChild(el('div.ex-card-head', {}, [
       el('div', {}, [
         el('div.ex-title', {}, [el('h3', { text: entry.name }), pbTag]),
-        el('p.target', { text: `Target: ${entry.targetSets} × ${entry.targetReps}${entry.type === 'time' ? 's' : ''}` }),
+        el('p.target', { text: entry.type === 'cardio' ? `Target: ${entry.targetReps} min` : `Target: ${entry.targetSets} × ${entry.targetReps}${entry.type === 'time' ? 's' : ''}` }),
       ]),
       entry.rest ? el('button.rest-btn', { onclick: (e) => startRest(entry.rest, e.currentTarget) }, `Rest ${entry.rest}s`) : null,
     ]));
@@ -307,6 +306,7 @@ export function session(id) {
     // Live PB badge: lights up when a completed set beats the prior best.
     const priorBest = S.exerciseBest(entry.exerciseId, { excludeLogId: log.id });
     const updatePb = () => {
+      if (entry.type === 'cardio') { pbTag.style.display = 'none'; return; } // cardio isn't a PB lift
       let v = 0;
       for (const s of entry.sets) {
         if (!s.done) continue;
@@ -317,11 +317,13 @@ export function session(id) {
     };
 
     // set rows
+    const colWeight = entry.type === 'time' ? `${unit} (opt)` : entry.type === 'cardio' ? 'lvl/km' : unit;
+    const colReps = entry.type === 'time' ? 'seconds' : entry.type === 'cardio' ? 'minutes' : 'reps';
     const table = el('div.set-table');
     table.appendChild(el('div.set-row.set-row-head', {}, [
       el('span', { text: 'Set' }),
-      el('span', { text: entry.type === 'time' ? `${unit} (opt)` : unit }),
-      el('span', { text: entry.type === 'time' ? 'seconds' : 'reps' }),
+      el('span', { text: colWeight }),
+      el('span', { text: colReps }),
       el('span', { text: '✓' }),
     ]));
     const renderRows = () => {
@@ -404,11 +406,11 @@ export function session(id) {
         toast(pbs.length === 1 ? `New PB! ${top.name} ${val} 🏆` : `${pbs.length} new PBs! 🏆`);
         if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
       } else {
-        toast('Session saved! 💪');
+        toast('Mission complete! 💪');
       }
       go('#/');
     },
-  }, [icon('check'), el('span', { text: log.completed ? 'Update & finish' : 'Finish workout' })]));
+  }, [icon('check'), el('span', { text: log.completed ? 'Update & save' : 'Complete mission' })]));
 
   if (log.completed) {
     wrap.appendChild(el('button.btn.danger-ghost', {
@@ -466,7 +468,7 @@ export function plan() {
           el('strong', { text: ex.name }),
           el('span.muted', { text: ex.note }),
         ]),
-        el('span.reps', { text: ex.type === 'time' ? `${ex.sets}×${ex.reps}s` : `${ex.sets}×${ex.reps}` }),
+        el('span.reps', { text: ex.type === 'cardio' ? `${ex.reps} min` : ex.type === 'time' ? `${ex.sets}×${ex.reps}s` : `${ex.sets}×${ex.reps}` }),
       ]));
     });
     card.appendChild(ul);
@@ -581,10 +583,12 @@ function planEditor() {
       row.appendChild(el('input.input', { value: ex.name, placeholder: 'Exercise name', onchange: (e) => { ex.name = e.target.value; S.savePlan(p); } }));
       const nums = el('div.editor-nums');
       nums.appendChild(numField('Sets', ex.sets, (v) => { ex.sets = clampInt(v, 1, 10); S.savePlan(p); }));
-      nums.appendChild(numField(ex.type === 'time' ? 'Secs' : 'Reps', ex.reps, (v) => { ex.reps = clampInt(v, 1, 600); S.savePlan(p); }));
+      const repLabel = ex.type === 'time' ? 'Secs' : ex.type === 'cardio' ? 'Mins' : 'Reps';
+      nums.appendChild(numField(repLabel, ex.reps, (v) => { ex.reps = clampInt(v, 1, 600); S.savePlan(p); }));
       nums.appendChild(numField('Rest', ex.rest, (v) => { ex.rest = clampInt(v, 0, 600); S.savePlan(p); }));
-      const typeSel = el('select.select.mini-sel', { onchange: (e) => { ex.type = e.target.value; S.savePlan(p); } });
-      ['reps', 'time'].forEach((t) => typeSel.appendChild(el('option', { value: t, text: t === 'reps' ? 'Reps' : 'Time', selected: ex.type === t ? 'selected' : null })));
+      const typeSel = el('select.select.mini-sel', { onchange: (e) => { ex.type = e.target.value; S.savePlan(p); rerender(); } });
+      const typeLabels = { reps: 'Reps', time: 'Time', cardio: 'Cardio' };
+      ['reps', 'time', 'cardio'].forEach((t) => typeSel.appendChild(el('option', { value: t, text: typeLabels[t], selected: ex.type === t ? 'selected' : null })));
       nums.appendChild(el('label.num-field', {}, [el('span', { text: 'Type' }), typeSel]));
       row.appendChild(nums);
       row.appendChild(el('input.input.note-input', { value: ex.note || '', placeholder: 'Coaching note (optional)', onchange: (e) => { ex.note = e.target.value; S.savePlan(p); } }));

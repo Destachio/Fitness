@@ -2,9 +2,9 @@
 from PIL import Image, ImageDraw, ImageFilter
 import os
 
-BG_TOP = (18, 26, 41)
-BG_BOT = (8, 11, 18)
-ACCENT = (34, 211, 255)
+BG_TOP = (13, 19, 25)
+BG_BOT = (5, 7, 10)
+ACCENT = (47, 230, 255)
 OUT = os.path.dirname(__file__)
 
 
@@ -58,7 +58,22 @@ def make(size, pad_factor, radius_factor, filename, maskable=False):
     glow = Image.new("RGBA", (s, s), (0, 0, 0, 0))
     gd = ImageDraw.Draw(glow)
 
-    scale = s * (0.13 if not maskable else 0.115)
+    scale = s * (0.115 if not maskable else 0.105)
+
+    # tactical reticle ring + crosshair ticks around the dumbbell
+    ring_r = s * (0.34 if not maskable else 0.30)
+    rw = max(2, int(s * 0.006))
+    gd.ellipse([s/2 - ring_r, s/2 - ring_r, s/2 + ring_r, s/2 + ring_r],
+               outline=ACCENT + (210,), width=rw)
+    tick = s * 0.045
+    for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)):
+        x0 = s/2 + dx * ring_r
+        y0 = s/2 + dy * ring_r
+        gd.line([x0 - dx * tick - dy * tick * 0, y0 - dy * tick,
+                 x0 + dx * tick, y0 + dy * tick], fill=ACCENT + (230,), width=rw)
+        gd.line([x0 - dx * tick, y0 - dy * tick, x0 + dx * tick, y0 + dy * tick],
+                fill=ACCENT + (230,), width=rw)
+
     draw_dumbbell(gd, s / 2, s / 2, scale, ACCENT + (255,))
 
     # glow layer

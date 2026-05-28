@@ -1,13 +1,13 @@
 {
-  "name": "Gym Tracker",
-  "short_name": "Gym",
-  "description": "Track gym sessions and follow a 4-week plan.",
+  "name": "Field Ops Fitness",
+  "short_name": "Ops",
+  "description": "Tactical gym tracker — run a 4-week mission, log every set, track progress.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0a0e16",
-  "theme_color": "#0a0e16",
+  "background_color": "#05070a",
+  "theme_color": "#05070a",
   "icons": [
     { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },

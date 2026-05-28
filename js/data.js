@@ -15,9 +15,10 @@ export const PROGRESSION = [
   { week: 4, addSets: 1, addReps: 0, cue: 'Extra set this week. Beat your earlier numbers where you can.' },
 ];
 
-// type: 'reps' = enter weight + reps;  'time' = enter seconds held (weight optional)
+// type: 'reps' = weight + reps;  'time' = seconds held;  'cardio' = minutes (conditioning)
 export const DEFAULT_PLAN = {
   name: '4-Week Foundation',
+  version: 2, // bump to push additive plan updates (e.g. cardio) to existing devices
   createdAt: null, // set when seeded
   days: [
     {
@@ -30,6 +31,7 @@ export const DEFAULT_PLAN = {
         { id: 'a4', name: 'Seated Cable Row',       type: 'reps', sets: 3, reps: 10, rest: 90, note: 'Squeeze shoulder blades together, don’t lean back too far.' },
         { id: 'a5', name: 'Dumbbell Shoulder Press',type: 'reps', sets: 3, reps: 10, rest: 90, note: 'Sit tall, press overhead, control the way down.' },
         { id: 'a6', name: 'Plank',                  type: 'time', sets: 3, reps: 30, rest: 60, note: 'Straight line from head to heels. Tight core.' },
+        { id: 'a7', name: 'Rowing Machine',         type: 'cardio', sets: 1, reps: 10, rest: 0, note: 'Steady-pace finisher — 10 min. Drive with the legs, then pull.' },
       ],
     },
     {
@@ -42,6 +44,7 @@ export const DEFAULT_PLAN = {
         { id: 'b4', name: 'Dumbbell Romanian Deadlift', type: 'reps', sets: 3, reps: 10, rest: 90, note: 'Light weight. Hinge at the hips, slight knee bend, flat back.' },
         { id: 'b5', name: 'Dumbbell Lateral Raise',     type: 'reps', sets: 3, reps: 12, rest: 60, note: 'Light dumbbells. Raise to shoulder height, lead with elbows.' },
         { id: 'b6', name: 'Cable Crunch',               type: 'reps', sets: 3, reps: 12, rest: 60, note: 'Crunch with your abs, not your arms.' },
+        { id: 'b7', name: 'Incline Treadmill Walk',     type: 'cardio', sets: 1, reps: 12, rest: 0, note: '12 min, brisk pace on an incline. Hands off the rails.' },
       ],
     },
     {
@@ -54,6 +57,7 @@ export const DEFAULT_PLAN = {
         { id: 'c4', name: 'Face Pull',          type: 'reps', sets: 3, reps: 15, rest: 60, note: 'Light. Pull the rope to your face, elbows high. Great for posture.' },
         { id: 'c5', name: 'Dumbbell Bicep Curl',type: 'reps', sets: 3, reps: 12, rest: 60, note: 'No swinging — let the arms do the work.' },
         { id: 'c6', name: 'Tricep Pushdown',    type: 'reps', sets: 3, reps: 12, rest: 60, note: 'Keep elbows pinned to your sides.' },
+        { id: 'c7', name: 'Bike Intervals',     type: 'cardio', sets: 1, reps: 10, rest: 0, note: '10 min: 30s hard / 90s easy, repeat. Big conditioning hit.' },
       ],
     },
   ],
@@ -62,6 +66,10 @@ export const DEFAULT_PLAN = {
 // Compute the target sets/reps for an exercise in a given week (1-based).
 export function targetFor(exercise, week) {
   const prog = PROGRESSION.find((p) => p.week === week) || PROGRESSION[0];
+  if (exercise.type === 'cardio') {
+    // Cardio stays a single bout but its duration ramps up over the weeks.
+    return { sets: exercise.sets, reps: exercise.reps + prog.addReps };
+  }
   return {
     sets: exercise.sets + prog.addSets,
     reps: exercise.reps + prog.addReps,
