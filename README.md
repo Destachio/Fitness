@@ -47,10 +47,10 @@ python3 -m http.server 8000
 3. Set **Branch** to `claude/gym-fitness-tracker-app-0W6ZJ` and folder to
    **`/ (root)`**, then **Save**.
 4. Wait ~1 minute. Your live URL appears at the top of the Pages screen —
-   it will be **`https://destachio.github.io/fitness/`**.
+   it will be **`https://destachio.github.io/Fitness/`**.
 
 Open that URL on your phone and **Add to Home Screen**. All paths are relative,
-so it works under the `/fitness/` sub-path. Every time you push to the branch,
+so it works under the `/Fitness/` sub-path. Every time you push to the branch,
 Pages redeploys automatically.
 
 ## Install on his phone
