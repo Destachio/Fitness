@@ -1,0 +1,140 @@
+// charts.js — tiny dependency-free SVG charts.
+
+const NS = 'http://www.w3.org/2000/svg';
+const ACCENT = '#22d3ff';
+
+function svgEl(tag, attrs) {
+  const el = document.createElementNS(NS, tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+
+// Circular progress ring. value/max -> filled arc. Returns an <svg>.
+export function progressRing(value, max, { size = 132, stroke = 12, label, sub } = {}) {
+  const pct = max > 0 ? Math.min(1, value / max) : 0;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const svg = svgEl('svg', { viewBox: `0 0 ${size} ${size}`, width: size, height: size, class: 'ring' });
+
+  svg.appendChild(svgEl('circle', {
+    cx: size / 2, cy: size / 2, r, fill: 'none',
+    stroke: 'rgba(255,255,255,.08)', 'stroke-width': stroke,
+  }));
+  const arc = svgEl('circle', {
+    cx: size / 2, cy: size / 2, r, fill: 'none',
+    stroke: ACCENT, 'stroke-width': stroke, 'stroke-linecap': 'round',
+    'stroke-dasharray': c, 'stroke-dashoffset': c * (1 - pct),
+    transform: `rotate(-90 ${size / 2} ${size / 2})`,
+    style: 'filter:drop-shadow(0 0 6px rgba(34,211,255,.6));transition:stroke-dashoffset .6s ease',
+  });
+  svg.appendChild(arc);
+
+  const big = svgEl('text', {
+    x: size / 2, y: size / 2 - 2, 'text-anchor': 'middle', 'dominant-baseline': 'middle',
+    fill: '#e9eef5', 'font-size': size * 0.26, 'font-weight': 700,
+  });
+  big.textContent = label != null ? label : `${Math.round(pct * 100)}%`;
+  svg.appendChild(big);
+
+  if (sub) {
+    const small = svgEl('text', {
+      x: size / 2, y: size / 2 + size * 0.17, 'text-anchor': 'middle',
+      fill: '#8b98a8', 'font-size': size * 0.1, 'font-weight': 600,
+    });
+    small.textContent = sub;
+    svg.appendChild(small);
+  }
+  return svg;
+}
+
+// Line chart from [{date, value}] points. Returns an <svg> (responsive width).
+export function lineChart(points, { height = 160, unit = '' } = {}) {
+  const W = 320, H = height, padL = 34, padR = 12, padT = 14, padB = 22;
+  const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart', preserveAspectRatio: 'none' });
+
+  if (!points.length) {
+    const t = svgEl('text', { x: W / 2, y: H / 2, 'text-anchor': 'middle', fill: '#8b98a8', 'font-size': 13 });
+    t.textContent = 'No data yet — log a session to see progress.';
+    svg.appendChild(t);
+    return svg;
+  }
+
+  const vals = points.map((p) => p.value);
+  const maxV = Math.max(...vals, 1);
+  const minV = Math.min(...vals, 0);
+  const range = maxV - minV || 1;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+  const x = (i) => padL + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
+  const y = (v) => padT + innerH - ((v - minV) / range) * innerH;
+
+  // gridlines + y labels (3 lines)
+  for (let g = 0; g <= 2; g++) {
+    const v = minV + (range * g) / 2;
+    const gy = y(v);
+    svg.appendChild(svgEl('line', { x1: padL, y1: gy, x2: W - padR, y2: gy, stroke: 'rgba(255,255,255,.06)', 'stroke-width': 1 }));
+    const lbl = svgEl('text', { x: padL - 6, y: gy + 3, 'text-anchor': 'end', fill: '#6b7787', 'font-size': 9 });
+    lbl.textContent = Math.round(v);
+    svg.appendChild(lbl);
+  }
+
+  // area fill
+  const linePts = points.map((p, i) => `${x(i)},${y(p.value)}`).join(' ');
+  const areaPts = `${padL},${y(minV)} ${linePts} ${x(points.length - 1)},${y(minV)}`;
+  const grad = svgEl('linearGradient', { id: 'fillGrad', x1: 0, y1: 0, x2: 0, y2: 1 });
+  grad.appendChild(svgEl('stop', { offset: '0%', 'stop-color': ACCENT, 'stop-opacity': 0.35 }));
+  grad.appendChild(svgEl('stop', { offset: '100%', 'stop-color': ACCENT, 'stop-opacity': 0 }));
+  const defs = svgEl('defs', {});
+  defs.appendChild(grad);
+  svg.appendChild(defs);
+  svg.appendChild(svgEl('polygon', { points: areaPts, fill: 'url(#fillGrad)' }));
+
+  // line
+  svg.appendChild(svgEl('polyline', {
+    points: linePts, fill: 'none', stroke: ACCENT, 'stroke-width': 2.5,
+    'stroke-linejoin': 'round', 'stroke-linecap': 'round',
+    style: 'filter:drop-shadow(0 0 4px rgba(34,211,255,.5))',
+  }));
+
+  // dots + last-value label
+  points.forEach((p, i) => {
+    svg.appendChild(svgEl('circle', { cx: x(i), cy: y(p.value), r: 3, fill: '#0b0f17', stroke: ACCENT, 'stroke-width': 2 }));
+  });
+  const last = points[points.length - 1];
+  const lt = svgEl('text', { x: x(points.length - 1), y: y(last.value) - 8, 'text-anchor': 'end', fill: '#e9eef5', 'font-size': 11, 'font-weight': 700 });
+  lt.textContent = `${last.value}${unit}`;
+  svg.appendChild(lt);
+
+  return svg;
+}
+
+// Weekly bar chart from [{label, value}].
+export function barChart(bars, { height = 150, unit = '' } = {}) {
+  const W = 320, H = height, padT = 16, padB = 26, padL = 10, padR = 10;
+  const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart', preserveAspectRatio: 'none' });
+  const maxV = Math.max(...bars.map((b) => b.value), 1);
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+  const slot = innerW / bars.length;
+  const bw = Math.min(46, slot * 0.6);
+
+  bars.forEach((b, i) => {
+    const h = (b.value / maxV) * innerH;
+    const bx = padL + slot * i + (slot - bw) / 2;
+    const by = padT + innerH - h;
+    svg.appendChild(svgEl('rect', {
+      x: bx, y: by, width: bw, height: Math.max(h, 1), rx: 5,
+      fill: b.value > 0 ? ACCENT : 'rgba(255,255,255,.12)',
+      style: b.value > 0 ? 'filter:drop-shadow(0 0 5px rgba(34,211,255,.45))' : '',
+    }));
+    if (b.value > 0) {
+      const vt = svgEl('text', { x: bx + bw / 2, y: by - 4, 'text-anchor': 'middle', fill: '#e9eef5', 'font-size': 10, 'font-weight': 700 });
+      vt.textContent = `${b.value}${unit}`;
+      svg.appendChild(vt);
+    }
+    const lt = svgEl('text', { x: bx + bw / 2, y: H - 8, 'text-anchor': 'middle', fill: '#8b98a8', 'font-size': 10 });
+    lt.textContent = b.label;
+    svg.appendChild(lt);
+  });
+  return svg;
+}

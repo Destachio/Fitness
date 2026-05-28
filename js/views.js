@@ -1,0 +1,539 @@
+// views.js — screen render functions. Each returns a DOM node.
+import * as S from './store.js';
+import { progressRing, lineChart, barChart } from './charts.js';
+import { el, clear, icon, toast, fmtDate } from './ui.js';
+import { PROGRESSION, PROGRAM_WEEKS } from './data.js';
+
+const go = (hash) => { location.hash = hash; };
+
+function header(title, sub) {
+  return el('header.screen-head', {}, [
+    el('h1', { text: title }),
+    sub ? el('p.sub', { text: sub }) : null,
+  ]);
+}
+
+function statCard(value, label, accent = false) {
+  return el(`div.stat${accent ? '.accent' : ''}`, {}, [
+    el('div.stat-val', { text: String(value) }),
+    el('div.stat-lbl', { text: label }),
+  ]);
+}
+
+// ---------------- DASHBOARD ----------------
+export function dashboard() {
+  const wrap = el('div.screen');
+  const s = S.getSettings();
+  const logs = S.getLogs().filter((l) => l.completed);
+  const done = S.completedCount();
+  const total = S.TOTAL_SESSIONS;
+
+  wrap.appendChild(header(`Hey, ${s.athleteName} 👋`, done >= total ? 'Program complete — legend!' : 'Let’s get after it today.'));
+
+  // Progress ring + quick stats
+  const top = el('div.dash-top');
+  top.appendChild(el('div.ring-card', {}, [
+    progressRing(done, total, { label: `${done}/${total}`, sub: 'sessions' }),
+    el('div.ring-cap', { text: 'Program progress' }),
+  ]));
+
+  const thisWeek = (() => {
+    const wk = currentWeek();
+    return logs.filter((l) => l.week === wk).length;
+  })();
+  const stats = el('div.stat-grid', {}, [
+    statCard(S.trainingStreak(), 'streak', true),
+    statCard(`${thisWeek}/${S.SESSIONS_PER_WEEK}`, 'this week'),
+    statCard(totalVolume(logs).toLocaleString(), `${s.weightUnit} lifted`),
+    statCard(`W${currentWeek()}`, 'of ' + PROGRAM_WEEKS),
+  ]);
+  top.appendChild(stats);
+  wrap.appendChild(top);
+
+  // Primary CTA
+  const next = S.nextScheduled();
+  if (next) {
+    wrap.appendChild(el('button.cta', { onclick: () => startSession(next.dayId, next.week) }, [
+      icon('dumbbell'),
+      el('span', {}, [
+        el('strong', { text: `Start ${next.dayName.split('·')[0].trim()}` }),
+        el('em', { text: `Week ${next.week} · ${next.dayName.split('·')[1]?.trim() || ''}` }),
+      ]),
+    ]));
+  } else {
+    wrap.appendChild(el('div.card.done-card', {}, [
+      icon('trophy'),
+      el('div', {}, [
+        el('strong', { text: '4-week program complete!' }),
+        el('p.sub', { text: 'Start it again from the Plan tab, or build a custom one in Parent mode.' }),
+      ]),
+    ]));
+  }
+
+  // Volume over time
+  wrap.appendChild(sectionCard('Total volume per session', lineChart(
+    logs.map((l) => ({ date: l.date, value: S.sessionVolume(l) })),
+    { unit: ` ${s.weightUnit}` }
+  )));
+
+  // Weekly sessions bar
+  const weekBars = [];
+  for (let w = 1; w <= PROGRAM_WEEKS; w++) {
+    weekBars.push({ label: 'W' + w, value: logs.filter((l) => l.week === w).length });
+  }
+  wrap.appendChild(sectionCard('Sessions completed each week', barChart(weekBars)));
+
+  // Per-exercise progress picker
+  wrap.appendChild(exerciseProgressCard());
+
+  // Recent sessions
+  wrap.appendChild(recentSessions(logs.slice().reverse().slice(0, 6)));
+
+  return wrap;
+}
+
+function sectionCard(title, child) {
+  return el('div.card', {}, [el('h3.card-title', { text: title }), child]);
+}
+
+function exerciseProgressCard() {
+  const card = el('div.card');
+  card.appendChild(el('h3.card-title', { text: 'Exercise progress' }));
+  const exes = S.planExercises();
+  const select = el('select.select');
+  exes.forEach((e) => select.appendChild(el('option', { value: e.id, text: e.name })));
+  const body = el('div');
+  const draw = () => {
+    const ex = exes.find((x) => x.id === select.value) || exes[0];
+    const pts = S.exerciseHistory(select.value).map((p) => ({ date: p.date, value: p.value }));
+    clear(body);
+    body.appendChild(lineChart(pts, { unit: ex && ex.type === 'time' ? 's' : ` ${S.getSettings().weightUnit}` }));
+    body.appendChild(el('p.hint', { text: ex && ex.type === 'time' ? 'Best hold time per session.' : 'Heaviest working set per session.' }));
+  };
+  select.addEventListener('change', draw);
+  card.appendChild(select);
+  card.appendChild(body);
+  if (exes.length) draw();
+  return card;
+}
+
+function recentSessions(items) {
+  const card = el('div.card');
+  card.appendChild(el('h3.card-title', { text: 'Recent sessions' }));
+  if (!items.length) {
+    card.appendChild(el('p.hint', { text: 'No sessions logged yet. Your history will show here.' }));
+    return card;
+  }
+  const list = el('ul.session-list');
+  items.forEach((l) => {
+    list.appendChild(el('li', { onclick: () => go('#/session/' + l.id) }, [
+      el('div', {}, [
+        el('strong', { text: l.dayName }),
+        el('span.muted', { text: `${fmtDate(l.date)} · Week ${l.week}` }),
+      ]),
+      el('span.vol', { text: `${S.sessionVolume(l).toLocaleString()} ${S.getSettings().weightUnit}` }),
+    ]));
+  });
+  card.appendChild(list);
+  return card;
+}
+
+function totalVolume(logs) {
+  return logs.reduce((sum, l) => sum + S.sessionVolume(l), 0);
+}
+function currentWeek() {
+  const done = S.completedCount();
+  return Math.min(PROGRAM_WEEKS, Math.floor(done / S.SESSIONS_PER_WEEK) + 1);
+}
+
+// ---------------- TODAY ----------------
+export function today() {
+  const wrap = el('div.screen');
+  wrap.appendChild(header('Today’s workout', 'Pick a session to start logging.'));
+  const next = S.nextScheduled();
+  const plan = S.getPlan();
+  const wk = currentWeek();
+
+  if (next) {
+    wrap.appendChild(el('p.hint', { text: `Up next: Week ${next.week} · ${next.dayName}` }));
+  }
+
+  plan.days.forEach((day) => {
+    const isNext = next && next.dayId === day.id && next.week === wk;
+    const card = el(`div.day-card${isNext ? '.next' : ''}`);
+    card.appendChild(el('div.day-card-head', {}, [
+      el('h3', { text: day.name }),
+      isNext ? el('span.badge', { text: 'Up next' }) : null,
+    ]));
+    const ul = el('ul.ex-preview');
+    day.exercises.forEach((ex) => {
+      const t = targetLabel(ex, wk);
+      ul.appendChild(el('li', {}, [
+        el('span', { text: ex.name }),
+        el('span.muted', { text: t }),
+      ]));
+    });
+    card.appendChild(ul);
+    card.appendChild(el('button.btn.primary', { onclick: () => startSession(day.id, wk) }, [
+      icon('dumbbell', { size: 18 }), el('span', { text: `Start · Week ${wk}` }),
+    ]));
+    wrap.appendChild(card);
+  });
+  return wrap;
+}
+
+function targetLabel(ex, week) {
+  const { sets, reps } = S.newSession ? targetForLocal(ex, week) : { sets: ex.sets, reps: ex.reps };
+  return ex.type === 'time' ? `${sets} × ${reps}s` : `${sets} × ${reps}`;
+}
+function targetForLocal(ex, week) {
+  const prog = PROGRESSION.find((p) => p.week === week) || PROGRESSION[0];
+  return { sets: ex.sets + prog.addSets, reps: ex.reps + prog.addReps };
+}
+
+function startSession(dayId, week) {
+  const sess = S.newSession(dayId, week);
+  S.saveLog(sess);
+  go('#/session/' + sess.id);
+}
+
+// ---------------- SESSION (logging) ----------------
+export function session(id) {
+  const log = S.getLog(id);
+  const wrap = el('div.screen');
+  if (!log) {
+    wrap.appendChild(header('Session not found'));
+    wrap.appendChild(el('button.btn', { onclick: () => go('#/today') }, 'Back to Today'));
+    return wrap;
+  }
+  const unit = S.getSettings().weightUnit;
+  const prog = PROGRESSION.find((p) => p.week === log.week);
+
+  wrap.appendChild(el('div.session-head', {}, [
+    el('button.icon-btn', { onclick: () => go('#/'), 'aria-label': 'Back' }, icon('back')),
+    el('div', {}, [
+      el('h1', { text: log.dayName }),
+      el('p.sub', { text: `Week ${log.week} of ${PROGRAM_WEEKS} · ${fmtDate(log.date)}` }),
+    ]),
+  ]));
+  if (prog) wrap.appendChild(el('div.cue', {}, [icon('flame', { size: 16 }), el('span', { text: prog.cue })]));
+
+  const save = () => S.saveLog(log);
+
+  log.entries.forEach((entry, ei) => {
+    const card = el('div.ex-card');
+    card.appendChild(el('div.ex-card-head', {}, [
+      el('div', {}, [
+        el('h3', { text: entry.name }),
+        el('p.target', { text: `Target: ${entry.targetSets} × ${entry.targetReps}${entry.type === 'time' ? 's' : ''}` }),
+      ]),
+      entry.rest ? el('button.rest-btn', { onclick: (e) => startRest(entry.rest, e.currentTarget) }, `Rest ${entry.rest}s`) : null,
+    ]));
+    if (entry.note) card.appendChild(el('p.ex-note', { text: entry.note }));
+
+    // set rows
+    const table = el('div.set-table');
+    table.appendChild(el('div.set-row.set-row-head', {}, [
+      el('span', { text: 'Set' }),
+      el('span', { text: entry.type === 'time' ? `${unit} (opt)` : unit }),
+      el('span', { text: entry.type === 'time' ? 'seconds' : 'reps' }),
+      el('span', { text: '✓' }),
+    ]));
+    const renderRows = () => {
+      [...table.querySelectorAll('.set-data')].forEach((n) => n.remove());
+      entry.sets.forEach((set, si) => {
+        const row = el(`div.set-row.set-data${set.done ? '.done' : ''}`);
+        row.appendChild(el('span.set-num', { text: String(si + 1) }));
+        const wInput = el('input.num', {
+          type: 'number', inputmode: 'decimal', placeholder: '–', value: set.weight,
+          onchange: (e) => { set.weight = e.target.value; save(); },
+        });
+        const rInput = el('input.num', {
+          type: 'number', inputmode: 'numeric', placeholder: String(entry.targetReps), value: set.reps,
+          onchange: (e) => { set.reps = e.target.value; save(); },
+        });
+        const chk = el(`button.set-check${set.done ? '.on' : ''}`, {
+          'aria-label': 'mark set done',
+          onclick: () => {
+            set.done = !set.done;
+            if (set.done && set.reps === '') set.reps = String(entry.targetReps);
+            save();
+            row.classList.toggle('done', set.done);
+            chk.classList.toggle('on', set.done);
+            chk.innerHTML = '';
+            if (set.done) chk.appendChild(icon('check', { size: 16 }));
+            updateProgressBar();
+          },
+        }, set.done ? icon('check', { size: 16 }) : null);
+        row.appendChild(wInput);
+        row.appendChild(rInput);
+        row.appendChild(chk);
+        table.appendChild(row);
+      });
+    };
+    renderRows();
+    card.appendChild(table);
+
+    // add / remove set
+    card.appendChild(el('div.set-actions', {}, [
+      el('button.mini', { onclick: () => { entry.sets.push({ weight: entry.sets.at(-1)?.weight || '', reps: '', done: false }); save(); renderRows(); } }, '+ Add set'),
+      entry.sets.length > 1 ? el('button.mini.ghost', { onclick: () => { entry.sets.pop(); save(); renderRows(); updateProgressBar(); } }, '– Remove') : null,
+    ]));
+    wrap.appendChild(card);
+  });
+
+  // session notes
+  wrap.appendChild(el('div.card', {}, [
+    el('h3.card-title', { text: 'Notes (how did it feel?)' }),
+    el('textarea.notes', { placeholder: 'e.g. squats felt strong, increase weight next time', onchange: (e) => { log.notes = e.target.value; save(); } }, log.notes || ''),
+  ]));
+
+  // progress + finish
+  const bar = el('div.finish-bar');
+  const fill = el('div.finish-fill');
+  const label = el('span.finish-label');
+  bar.appendChild(el('div.finish-track', {}, fill));
+  bar.appendChild(label);
+  function updateProgressBar() {
+    const totalSets = log.entries.reduce((n, e) => n + e.sets.length, 0);
+    const doneSets = log.entries.reduce((n, e) => n + e.sets.filter((s) => s.done).length, 0);
+    const pct = totalSets ? Math.round((doneSets / totalSets) * 100) : 0;
+    fill.style.width = pct + '%';
+    label.textContent = `${doneSets}/${totalSets} sets done`;
+  }
+  updateProgressBar();
+  wrap.appendChild(bar);
+
+  wrap.appendChild(el('button.cta.finish', {
+    onclick: () => {
+      log.completed = true;
+      log.date = log.date || new Date().toISOString();
+      S.saveLog(log);
+      toast('Session saved! 💪');
+      go('#/');
+    },
+  }, [icon('check'), el('span', { text: log.completed ? 'Update & finish' : 'Finish workout' })]));
+
+  if (log.completed) {
+    wrap.appendChild(el('button.btn.danger-ghost', {
+      onclick: () => { if (confirm('Delete this session from your history?')) { S.deleteLog(log.id); toast('Deleted'); go('#/'); } },
+    }, [icon('trash', { size: 16 }), el('span', { text: 'Delete session' })]));
+  }
+
+  return wrap;
+}
+
+let restTimer;
+function startRest(sec, btn) {
+  clearInterval(restTimer);
+  let left = sec;
+  btn.classList.add('running');
+  const tick = () => {
+    btn.textContent = `Rest ${left}s`;
+    if (left <= 0) {
+      clearInterval(restTimer);
+      btn.classList.remove('running');
+      btn.textContent = `Rest ${sec}s`;
+      toast('Rest done — next set! ⏱️');
+      if (navigator.vibrate) navigator.vibrate(200);
+      return;
+    }
+    left--;
+  };
+  tick();
+  restTimer = setInterval(tick, 1000);
+}
+
+// ---------------- PLAN (overview) ----------------
+export function plan() {
+  const wrap = el('div.screen');
+  const p = S.getPlan();
+  wrap.appendChild(header(p.name, '3 days/week · 4-week progressive plan'));
+
+  // progression legend
+  const leg = el('div.card', {}, [el('h3.card-title', { text: 'How the 4 weeks ramp up' })]);
+  PROGRESSION.forEach((pr) => {
+    leg.appendChild(el('div.week-row', {}, [
+      el('span.week-tag', { text: 'Week ' + pr.week }),
+      el('span', { text: pr.cue }),
+    ]));
+  });
+  wrap.appendChild(leg);
+
+  p.days.forEach((day) => {
+    const card = el('div.card');
+    card.appendChild(el('h3.card-title', { text: day.name }));
+    const ul = el('ul.plan-ex');
+    day.exercises.forEach((ex) => {
+      ul.appendChild(el('li', {}, [
+        el('div', {}, [
+          el('strong', { text: ex.name }),
+          el('span.muted', { text: ex.note }),
+        ]),
+        el('span.reps', { text: ex.type === 'time' ? `${ex.sets}×${ex.reps}s` : `${ex.sets}×${ex.reps}` }),
+      ]));
+    });
+    card.appendChild(ul);
+    wrap.appendChild(card);
+  });
+
+  wrap.appendChild(el('button.btn', { onclick: () => go('#/parent') }, [icon('gear', { size: 18 }), el('span', { text: 'Edit plan (parent)' })]));
+  return wrap;
+}
+
+// ---------------- PARENT ----------------
+export function parent() {
+  const wrap = el('div.screen');
+  wrap.appendChild(header('Parent mode', 'Customise workouts & settings.'));
+
+  if (!S.isParentUnlocked()) {
+    return pinGate(wrap);
+  }
+  if (!S.hasPin()) {
+    wrap.appendChild(pinSetupCard());
+  }
+
+  // Settings
+  const s = S.getSettings();
+  const set = el('div.card');
+  set.appendChild(el('h3.card-title', { text: 'Settings' }));
+  set.appendChild(field('Athlete name', el('input.input', { value: s.athleteName, onchange: (e) => S.saveSettings({ athleteName: e.target.value || 'Athlete' }) })));
+  const unitSel = el('select.select', { onchange: (e) => S.saveSettings({ weightUnit: e.target.value }) });
+  ['kg', 'lb'].forEach((u) => unitSel.appendChild(el('option', { value: u, text: u, selected: s.weightUnit === u ? 'selected' : null })));
+  set.appendChild(field('Weight unit', unitSel));
+  set.appendChild(field('Program start date', el('input.input', { type: 'date', value: s.startDate || '', onchange: (e) => S.saveSettings({ startDate: e.target.value }) })));
+  wrap.appendChild(set);
+
+  // Plan editor
+  wrap.appendChild(planEditor());
+
+  // PIN management
+  if (S.hasPin()) {
+    wrap.appendChild(el('div.card', {}, [
+      el('h3.card-title', { text: 'Parent PIN' }),
+      el('button.btn', { onclick: () => { const pin = prompt('Set a new 4-digit PIN'); if (pin && /^\d{4,8}$/.test(pin)) { S.setPin(pin); toast('PIN updated'); } else if (pin) toast('Use 4–8 digits', 'err'); } }, 'Change PIN'),
+    ]));
+  }
+
+  // Data / backup
+  const data = el('div.card');
+  data.appendChild(el('h3.card-title', { text: 'Data & backup' }));
+  data.appendChild(el('p.hint', { text: 'Workouts are stored on this device only. Export a backup before clearing browser data or switching phones.' }));
+  data.appendChild(el('div.row-btns', {}, [
+    el('button.btn', { onclick: exportBackup }, 'Export backup'),
+    el('button.btn', { onclick: importBackup }, 'Import backup'),
+  ]));
+  data.appendChild(el('button.btn.danger-ghost', {
+    onclick: () => { if (confirm('Reset the plan to the default 4-week program? Your logged sessions are kept.')) { S.resetPlanToDefault(); toast('Plan reset to default'); rerender(); } },
+  }, 'Reset plan to default'));
+  data.appendChild(el('button.btn.danger-ghost', {
+    onclick: () => { if (confirm('Erase ALL sessions and history? This cannot be undone.')) { S.getLogs().forEach((l) => S.deleteLog(l.id)); toast('History cleared'); } },
+  }, 'Clear all session history'));
+  wrap.appendChild(data);
+
+  return wrap;
+}
+
+function pinGate(wrap) {
+  const card = el('div.card.pin-card');
+  card.appendChild(icon('lock', { size: 40 }));
+  card.appendChild(el('h3', { text: 'Enter parent PIN' }));
+  const input = el('input.input.pin-input', { type: 'password', inputmode: 'numeric', placeholder: '••••', maxlength: 8 });
+  const submit = () => {
+    if (S.checkPin(input.value)) { S.unlockParent(); toast('Unlocked'); rerender(); }
+    else { toast('Wrong PIN', 'err'); input.value = ''; }
+  };
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  card.appendChild(input);
+  card.appendChild(el('button.btn.primary', { onclick: submit }, 'Unlock'));
+  wrap.appendChild(card);
+  setTimeout(() => input.focus(), 50);
+  return wrap;
+}
+
+function pinSetupCard() {
+  const card = el('div.card');
+  card.appendChild(el('h3.card-title', { text: 'Protect parent mode' }));
+  card.appendChild(el('p.hint', { text: 'Set a PIN so your son can’t accidentally change the plan. (Optional.)' }));
+  const input = el('input.input', { type: 'password', inputmode: 'numeric', placeholder: '4–8 digit PIN', maxlength: 8 });
+  card.appendChild(input);
+  card.appendChild(el('button.btn.primary', {
+    onclick: () => { if (/^\d{4,8}$/.test(input.value)) { S.setPin(input.value); S.unlockParent(); toast('PIN set'); rerender(); } else toast('Use 4–8 digits', 'err'); },
+  }, 'Set PIN'));
+  return card;
+}
+
+function field(label, control) {
+  return el('label.field', {}, [el('span.field-lbl', { text: label }), control]);
+}
+
+function planEditor() {
+  const card = el('div.card.editor');
+  card.appendChild(el('h3.card-title', { text: 'Workout editor' }));
+  card.appendChild(el('p.hint', { text: 'Edit exercises, sets & reps. The 4-week ramp applies automatically on top of these base numbers.' }));
+  const p = S.getPlan();
+
+  const planNameInput = el('input.input', { value: p.name, onchange: (e) => { p.name = e.target.value; S.savePlan(p); } });
+  card.appendChild(field('Plan name', planNameInput));
+
+  p.days.forEach((day) => {
+    const box = el('div.editor-day');
+    box.appendChild(el('input.input.day-name', { value: day.name, onchange: (e) => { day.name = e.target.value; S.savePlan(p); } }));
+
+    day.exercises.forEach((ex) => {
+      const row = el('div.editor-ex');
+      row.appendChild(el('input.input', { value: ex.name, placeholder: 'Exercise name', onchange: (e) => { ex.name = e.target.value; S.savePlan(p); } }));
+      const nums = el('div.editor-nums');
+      nums.appendChild(numField('Sets', ex.sets, (v) => { ex.sets = clampInt(v, 1, 10); S.savePlan(p); }));
+      nums.appendChild(numField(ex.type === 'time' ? 'Secs' : 'Reps', ex.reps, (v) => { ex.reps = clampInt(v, 1, 600); S.savePlan(p); }));
+      nums.appendChild(numField('Rest', ex.rest, (v) => { ex.rest = clampInt(v, 0, 600); S.savePlan(p); }));
+      const typeSel = el('select.select.mini-sel', { onchange: (e) => { ex.type = e.target.value; S.savePlan(p); } });
+      ['reps', 'time'].forEach((t) => typeSel.appendChild(el('option', { value: t, text: t === 'reps' ? 'Reps' : 'Time', selected: ex.type === t ? 'selected' : null })));
+      nums.appendChild(el('label.num-field', {}, [el('span', { text: 'Type' }), typeSel]));
+      row.appendChild(nums);
+      row.appendChild(el('input.input.note-input', { value: ex.note || '', placeholder: 'Coaching note (optional)', onchange: (e) => { ex.note = e.target.value; S.savePlan(p); } }));
+      row.appendChild(el('button.icon-btn.del', { onclick: () => { day.exercises = day.exercises.filter((x) => x !== ex); S.savePlan(p); rerender(); }, 'aria-label': 'delete exercise' }, icon('trash', { size: 16 })));
+      box.appendChild(row);
+    });
+
+    box.appendChild(el('button.mini', {
+      onclick: () => { day.exercises.push({ id: 'ex_' + Date.now().toString(36), name: 'New exercise', type: 'reps', sets: 3, reps: 10, rest: 90, note: '' }); S.savePlan(p); rerender(); },
+    }, '+ Add exercise'));
+    card.appendChild(box);
+  });
+
+  return card;
+}
+
+function numField(label, value, onchange) {
+  return el('label.num-field', {}, [
+    el('span', { text: label }),
+    el('input.input.num-sm', { type: 'number', inputmode: 'numeric', value, onchange: (e) => onchange(e.target.value) }),
+  ]);
+}
+function clampInt(v, lo, hi) { return Math.max(lo, Math.min(hi, parseInt(v, 10) || lo)); }
+
+function exportBackup() {
+  const blob = new Blob([S.exportData()], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = el('a', { href: url, download: `fitness-backup-${new Date().toISOString().slice(0, 10)}.json` });
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  toast('Backup downloaded');
+}
+function importBackup() {
+  const inp = el('input', { type: 'file', accept: 'application/json' });
+  inp.addEventListener('change', () => {
+    const file = inp.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { try { S.importData(reader.result); toast('Backup restored'); rerender(); } catch { toast('Invalid backup file', 'err'); } };
+    reader.readAsText(file);
+  });
+  inp.click();
+}
+
+// app.js sets this so views can trigger a re-render after data changes.
+let _rerender = () => {};
+export function setRerender(fn) { _rerender = fn; }
+function rerender() { _rerender(); }
