@@ -195,6 +195,33 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .note-input { font-size: .85rem; }
 .editor-ex .del { position: absolute; top: 9px; right: 9px; }
 
+/* ---- body weight ---- */
+.bw-now { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.bw-val { font-size: 1.8rem; font-weight: 800; letter-spacing: -.02em; color: var(--accent); }
+.bw-diff { font-size: .8rem; font-weight: 600; color: var(--muted); }
+.bw-diff.up { color: var(--good); }
+.bw-diff.down { color: #ffd27a; }
+.bw-form { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-top: 12px; }
+.bw-add { width: auto; padding: 11px 18px; }
+@media (max-width: 360px) { .bw-form { grid-template-columns: 1fr 1fr; } .bw-add { grid-column: 1 / -1; } }
+
+/* ---- personal best badges ---- */
+.pb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pb-badge { position: relative; display: flex; align-items: center; gap: 10px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; }
+.pb-badge .icon { color: var(--faint); flex-shrink: 0; }
+.pb-badge.new { border-color: rgba(34, 211, 255, .45); box-shadow: var(--glow); }
+.pb-badge.new .icon { color: var(--accent); }
+.pb-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.pb-name { font-size: .76rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pb-val { font-size: 1.05rem; font-weight: 800; color: var(--text); }
+.pb-detail { font-size: .68rem; color: var(--faint); }
+.pb-new { position: absolute; top: -7px; right: -6px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #04121a; font-size: .56rem; font-weight: 800; letter-spacing: .06em; padding: 3px 6px; border-radius: 999px; box-shadow: var(--glow); }
+
+/* inline PB tag during logging */
+.ex-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pb-tag { background: var(--accent-soft); color: var(--accent); font-size: .66rem; font-weight: 800; padding: 3px 8px; border-radius: 999px; letter-spacing: .03em; animation: pop .3s ease; }
+@keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
 /* ---- bottom nav ---- */
 .bottom-nav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;

@@ -15,6 +15,11 @@ offline once installed.
 - **Workout logging** — every session shows the day, exercises, target sets/reps,
   coaching notes, and inputs for the **weight** and **reps completed** per set.
   Tick sets off, add/remove sets, leave a note, and a built-in rest timer.
+- **Body weight tracker** — log weigh-ins (one per day), see the latest weight,
+  the change since you started, and a trend chart on the dashboard.
+- **Personal best badges** 🏆 — the app tracks your best lift for each exercise.
+  Beat it during a workout and a "PB!" tag lights up live; finish the session and
+  you get a celebration. Recent PBs are flagged **NEW** on the dashboard.
 - **4-week default plan** — full-body, 3 days/week (A/B/C), tuned for a teen
   beginner at a commercial gym. The 4 weeks ramp up automatically (reps then an
   extra set).
@@ -35,9 +40,18 @@ python3 -m http.server 8000
 # then open http://localhost:8000
 ```
 
-**Host it free (recommended):** push this branch and enable **GitHub Pages**
-for the repo (Settings → Pages → deploy from branch). All paths are relative,
-so it works under a sub-path like `/fitness/`.
+**Host it free on GitHub Pages (test on your phone before merging):**
+
+1. On GitHub, open the repo → **Settings** → **Pages** (left sidebar).
+2. Under **Build and deployment → Source**, choose **Deploy from a branch**.
+3. Set **Branch** to `claude/gym-fitness-tracker-app-0W6ZJ` and folder to
+   **`/ (root)`**, then **Save**.
+4. Wait ~1 minute. Your live URL appears at the top of the Pages screen —
+   it will be **`https://destachio.github.io/fitness/`**.
+
+Open that URL on your phone and **Add to Home Screen**. All paths are relative,
+so it works under the `/fitness/` sub-path. Every time you push to the branch,
+Pages redeploys automatically.
 
 ## Install on his phone
 

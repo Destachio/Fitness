@@ -5,6 +5,7 @@ const KEYS = {
   plan: 'fit.plan.v1',
   logs: 'fit.logs.v1',
   settings: 'fit.settings.v1',
+  bodyweight: 'fit.bodyweight.v1',
 };
 
 function read(key, fallback) {
@@ -205,6 +206,84 @@ export function trainingStreak() {
   return streak;
 }
 
+// ---- Body weight ----
+export function getBodyweights() {
+  return read(KEYS.bodyweight, []).slice().sort((a, b) => a.date.localeCompare(b.date));
+}
+export function addBodyweight(weight, date) {
+  const w = parseFloat(weight);
+  if (!w || w <= 0) return null;
+  const d = (date || new Date().toISOString().slice(0, 10));
+  const list = read(KEYS.bodyweight, []);
+  // One entry per day — replace if the same date already exists.
+  const idx = list.findIndex((e) => e.date === d);
+  const entry = { id: idx >= 0 ? list[idx].id : 'bw_' + Date.now().toString(36), date: d, weight: Math.round(w * 10) / 10 };
+  if (idx >= 0) list[idx] = entry; else list.push(entry);
+  write(KEYS.bodyweight, list);
+  return entry;
+}
+export function deleteBodyweight(id) {
+  write(KEYS.bodyweight, read(KEYS.bodyweight, []).filter((e) => e.id !== id));
+}
+
+// ---- Personal bests ----
+// Best working set inside one logged exercise entry.
+function bestEntryValue(entry) {
+  let value = 0, reps = 0;
+  for (const s of entry.sets) {
+    if (!s.done) continue;
+    if (entry.type === 'time') {
+      const sec = parseInt(s.reps, 10) || 0;
+      if (sec > value) { value = sec; reps = sec; }
+    } else {
+      const w = parseFloat(s.weight) || 0;
+      const r = parseInt(s.reps, 10) || 0;
+      if (w > value || (w === value && r > reps)) { value = w; reps = r; }
+    }
+  }
+  return { value, reps };
+}
+
+// Best ever value for an exercise across completed logs (optionally excluding one).
+export function exerciseBest(exerciseId, { excludeLogId = null } = {}) {
+  let best = null;
+  for (const log of getLogs()) {
+    if (!log.completed || log.id === excludeLogId) continue;
+    const entry = log.entries.find((e) => e.exerciseId === exerciseId);
+    if (!entry) continue;
+    const v = bestEntryValue(entry);
+    if (v.value > 0 && (!best || v.value > best.value)) best = { ...v, date: log.date };
+  }
+  return best;
+}
+
+// PB list for the dashboard, one per current plan exercise that has history.
+export function personalBests() {
+  return planExercises()
+    .map((ex) => ({ ...ex, best: exerciseBest(ex.id) }))
+    .filter((x) => x.best);
+}
+
+// Given a (just-completed) log, which exercises set a NEW personal best?
+export function detectNewPBs(log) {
+  const out = [];
+  for (const entry of log.entries) {
+    const cur = bestEntryValue(entry);
+    if (cur.value <= 0) continue;
+    const prior = exerciseBest(entry.exerciseId, { excludeLogId: log.id });
+    if (!prior || cur.value > prior.value) {
+      out.push({ exerciseId: entry.exerciseId, name: entry.name, type: entry.type, value: cur.value, reps: cur.reps, prev: prior ? prior.value : null });
+    }
+  }
+  return out;
+}
+
+// Is this PB's date the most recent completed-session date? (used to flag "NEW")
+export function latestSessionDate() {
+  const done = getLogs().filter((l) => l.completed);
+  return done.length ? done[done.length - 1].date.slice(0, 10) : null;
+}
+
 // ---- PIN (lightweight, obfuscated child-lock — NOT cryptographic) ----
 export function hashPin(pin) {
   let h = 2166136261;
@@ -236,6 +315,7 @@ export function exportData() {
     plan: getPlan(),
     logs: getLogs(),
     settings: getSettings(),
+    bodyweight: getBodyweights(),
     exportedAt: new Date().toISOString(),
   }, null, 2);
 }
@@ -244,4 +324,5 @@ export function importData(json) {
   if (data.plan) write(KEYS.plan, data.plan);
   if (data.logs) write(KEYS.logs, data.logs);
   if (data.settings) write(KEYS.settings, data.settings);
+  if (data.bodyweight) write(KEYS.bodyweight, data.bodyweight);
 }

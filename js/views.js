@@ -70,6 +70,9 @@ export function dashboard() {
     ]));
   }
 
+  // Body weight tracker
+  wrap.appendChild(bodyweightCard());
+
   // Volume over time
   wrap.appendChild(sectionCard('Total volume per session', lineChart(
     logs.map((l) => ({ date: l.date, value: S.sessionVolume(l) })),
@@ -82,6 +85,9 @@ export function dashboard() {
     weekBars.push({ label: 'W' + w, value: logs.filter((l) => l.week === w).length });
   }
   wrap.appendChild(sectionCard('Sessions completed each week', barChart(weekBars)));
+
+  // Personal best badges
+  wrap.appendChild(personalBestsCard());
 
   // Per-exercise progress picker
   wrap.appendChild(exerciseProgressCard());
@@ -114,6 +120,71 @@ function exerciseProgressCard() {
   card.appendChild(select);
   card.appendChild(body);
   if (exes.length) draw();
+  return card;
+}
+
+function bodyweightCard() {
+  const unit = S.getSettings().weightUnit;
+  const entries = S.getBodyweights();
+  const card = el('div.card');
+  card.appendChild(el('h3.card-title', { text: 'Body weight' }));
+
+  if (entries.length) {
+    const latest = entries[entries.length - 1];
+    const first = entries[0];
+    const diff = Math.round((latest.weight - first.weight) * 10) / 10;
+    const arrow = diff > 0 ? '▲' : diff < 0 ? '▼' : '·';
+    card.appendChild(el('div.bw-now', {}, [
+      el('span.bw-val', { text: `${latest.weight} ${unit}` }),
+      entries.length > 1 ? el('span.bw-diff', { text: `${arrow} ${Math.abs(diff)} ${unit} since start`, class: `bw-diff ${diff > 0 ? 'up' : diff < 0 ? 'down' : ''}` }) : el('span.bw-diff', { text: 'first entry' }),
+    ]));
+    card.appendChild(lineChart(entries.map((e) => ({ date: e.date, value: e.weight })), { unit: ` ${unit}`, height: 130 }));
+  } else {
+    card.appendChild(el('p.hint', { text: 'Log body weight to track changes over the program. Weigh in once a week at the same time of day.' }));
+  }
+
+  // inline add
+  const dateInput = el('input.input.bw-date', { type: 'date', value: new Date().toISOString().slice(0, 10) });
+  const wInput = el('input.input.bw-input', { type: 'number', inputmode: 'decimal', placeholder: `Weight (${unit})` });
+  const addBtn = el('button.btn.primary.bw-add', {
+    onclick: () => {
+      if (!wInput.value) { toast('Enter a weight', 'err'); return; }
+      S.addBodyweight(wInput.value, dateInput.value);
+      toast('Body weight logged');
+      rerender();
+    },
+  }, 'Log');
+  card.appendChild(el('div.bw-form', {}, [wInput, dateInput, addBtn]));
+  return card;
+}
+
+function personalBestsCard() {
+  const unit = S.getSettings().weightUnit;
+  const pbs = S.personalBests();
+  const latestDate = S.latestSessionDate();
+  const card = el('div.card');
+  card.appendChild(el('h3.card-title', { text: 'Personal bests 🏆' }));
+  if (!pbs.length) {
+    card.appendChild(el('p.hint', { text: 'Finish workouts to earn PB badges — your best lift for each exercise shows up here.' }));
+    return card;
+  }
+  const grid = el('div.pb-grid');
+  pbs.sort((a, b) => (b.best.date || '').localeCompare(a.best.date || ''));
+  pbs.forEach((p) => {
+    const isNew = p.best.date && p.best.date.slice(0, 10) === latestDate;
+    const value = p.type === 'time' ? `${p.best.value}s` : `${p.best.value} ${unit}`;
+    const detail = p.type === 'time' ? 'best hold' : `× ${p.best.reps} reps`;
+    grid.appendChild(el(`div.pb-badge${isNew ? '.new' : ''}`, {}, [
+      isNew ? el('span.pb-new', { text: 'NEW' }) : null,
+      icon('trophy', { size: 18 }),
+      el('div.pb-body', {}, [
+        el('span.pb-name', { text: p.name }),
+        el('span.pb-val', { text: value }),
+        el('span.pb-detail', { text: detail }),
+      ]),
+    ]));
+  });
+  card.appendChild(grid);
   return card;
 }
 
@@ -222,14 +293,28 @@ export function session(id) {
 
   log.entries.forEach((entry, ei) => {
     const card = el('div.ex-card');
+    const pbTag = el('span.pb-tag', { text: '🏆 PB!' });
+    pbTag.style.display = 'none';
     card.appendChild(el('div.ex-card-head', {}, [
       el('div', {}, [
-        el('h3', { text: entry.name }),
+        el('div.ex-title', {}, [el('h3', { text: entry.name }), pbTag]),
         el('p.target', { text: `Target: ${entry.targetSets} × ${entry.targetReps}${entry.type === 'time' ? 's' : ''}` }),
       ]),
       entry.rest ? el('button.rest-btn', { onclick: (e) => startRest(entry.rest, e.currentTarget) }, `Rest ${entry.rest}s`) : null,
     ]));
     if (entry.note) card.appendChild(el('p.ex-note', { text: entry.note }));
+
+    // Live PB badge: lights up when a completed set beats the prior best.
+    const priorBest = S.exerciseBest(entry.exerciseId, { excludeLogId: log.id });
+    const updatePb = () => {
+      let v = 0;
+      for (const s of entry.sets) {
+        if (!s.done) continue;
+        const val = entry.type === 'time' ? (parseInt(s.reps, 10) || 0) : (parseFloat(s.weight) || 0);
+        if (val > v) v = val;
+      }
+      pbTag.style.display = v > 0 && (!priorBest || v > priorBest.value) ? '' : 'none';
+    };
 
     // set rows
     const table = el('div.set-table');
@@ -246,11 +331,11 @@ export function session(id) {
         row.appendChild(el('span.set-num', { text: String(si + 1) }));
         const wInput = el('input.num', {
           type: 'number', inputmode: 'decimal', placeholder: '–', value: set.weight,
-          onchange: (e) => { set.weight = e.target.value; save(); },
+          onchange: (e) => { set.weight = e.target.value; save(); updatePb(); },
         });
         const rInput = el('input.num', {
           type: 'number', inputmode: 'numeric', placeholder: String(entry.targetReps), value: set.reps,
-          onchange: (e) => { set.reps = e.target.value; save(); },
+          onchange: (e) => { set.reps = e.target.value; save(); updatePb(); },
         });
         const chk = el(`button.set-check${set.done ? '.on' : ''}`, {
           'aria-label': 'mark set done',
@@ -263,6 +348,7 @@ export function session(id) {
             chk.innerHTML = '';
             if (set.done) chk.appendChild(icon('check', { size: 16 }));
             updateProgressBar();
+            updatePb();
           },
         }, set.done ? icon('check', { size: 16 }) : null);
         row.appendChild(wInput);
@@ -272,12 +358,13 @@ export function session(id) {
       });
     };
     renderRows();
+    updatePb();
     card.appendChild(table);
 
     // add / remove set
     card.appendChild(el('div.set-actions', {}, [
       el('button.mini', { onclick: () => { entry.sets.push({ weight: entry.sets.at(-1)?.weight || '', reps: '', done: false }); save(); renderRows(); } }, '+ Add set'),
-      entry.sets.length > 1 ? el('button.mini.ghost', { onclick: () => { entry.sets.pop(); save(); renderRows(); updateProgressBar(); } }, '– Remove') : null,
+      entry.sets.length > 1 ? el('button.mini.ghost', { onclick: () => { entry.sets.pop(); save(); renderRows(); updateProgressBar(); updatePb(); } }, '– Remove') : null,
     ]));
     wrap.appendChild(card);
   });
@@ -309,7 +396,16 @@ export function session(id) {
       log.completed = true;
       log.date = log.date || new Date().toISOString();
       S.saveLog(log);
-      toast('Session saved! 💪');
+      const pbs = S.detectNewPBs(log);
+      if (pbs.length) {
+        const unit = S.getSettings().weightUnit;
+        const top = pbs[0];
+        const val = top.type === 'time' ? `${top.value}s` : `${top.value} ${unit}`;
+        toast(pbs.length === 1 ? `New PB! ${top.name} ${val} 🏆` : `${pbs.length} new PBs! 🏆`);
+        if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
+      } else {
+        toast('Session saved! 💪');
+      }
       go('#/');
     },
   }, [icon('check'), el('span', { text: log.completed ? 'Update & finish' : 'Finish workout' })]));
