@@ -74,6 +74,9 @@ export function dashboard() {
   // Daily hydration counter
   wrap.appendChild(hydrationCard());
 
+  // Verse of the day (updates daily)
+  wrap.appendChild(verseCard());
+
   // Body weight tracker
   wrap.appendChild(bodyweightCard());
 
@@ -263,12 +266,11 @@ function recentSessions(items) {
   return card;
 }
 
-// Closing "debrief" verse of the day. Pinned to the session's own date so an
-// old session always shows the verse it was completed with.
+// Verse of the day — shown on the Base page, updates daily.
 function verseCard(dateIso) {
   const v = verseForDate(dateIso ? new Date(dateIso) : new Date());
   return el('div.card.verse-card', {}, [
-    el('div.verse-head', {}, [icon('book', { size: 16 }), el('span', { text: 'Daily Debrief' })]),
+    el('div.verse-head', {}, [icon('book', { size: 16 }), el('span', { text: 'Verse of the Day' })]),
     el('p.verse-text', { text: `“${v.text}”` }),
     el('p.verse-ref', { text: `${v.ref} · NKJV` }),
   ]);
@@ -456,10 +458,8 @@ export function session(id) {
   updateProgressBar();
   wrap.appendChild(bar);
 
-  const wasCompleted = log.completed;
   wrap.appendChild(el('button.cta.finish', {
     onclick: () => {
-      const firstTime = !log.completed;
       log.completed = true;
       log.date = log.date || new Date().toISOString();
       S.saveLog(log);
@@ -473,17 +473,11 @@ export function session(id) {
       } else {
         toast('Mission complete! 💪');
       }
-      // Re-render this session so the verse-of-the-day debrief appears; the
-      // athlete reads it, then heads to base.
-      if (firstTime) rerender();
-      else go('#/');
+      go('#/');
     },
-  }, [icon('check'), el('span', { text: wasCompleted ? 'Update & save' : 'Complete mission' })]));
+  }, [icon('check'), el('span', { text: log.completed ? 'Update & save' : 'Complete mission' })]));
 
-  // Verse of the day — the closing "debrief" after a completed session.
   if (log.completed) {
-    wrap.appendChild(verseCard(log.date));
-    wrap.appendChild(el('button.btn', { onclick: () => go('#/') }, [icon('back', { size: 16 }), el('span', { text: 'Back to base' })]));
     wrap.appendChild(el('button.btn.danger-ghost', {
       onclick: () => { if (confirm('Delete this session from your history?')) { S.deleteLog(log.id); toast('Deleted'); go('#/'); } },
     }, [icon('trash', { size: 16 }), el('span', { text: 'Delete session' })]));

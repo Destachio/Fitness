@@ -1,5 +1,5 @@
 // sw.js — offline cache for the PWA. Bump CACHE when files change.
-const CACHE = 'gym-tracker-v5';
+const CACHE = 'gym-tracker-v6';
 const ASSETS = [
   './',
   './index.html',
