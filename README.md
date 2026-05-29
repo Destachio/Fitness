@@ -22,6 +22,9 @@ offline once installed.
   set in Command.
 - **Body weight tracker** — log weigh-ins (one per day), see the latest weight,
   the change since you started, and a trend chart on the dashboard.
+- **Daily Debrief verse** — finishing a workout reveals a motivational Bible
+  verse (NKJV) themed around strength, courage, and perseverance. One verse per
+  day, rotating through the set and consistent all day.
 - **Personal best badges** 🏆 — the app tracks your best lift for each exercise.
   Beat it during a workout and a "PB!" tag lights up live; finish the session and
   you get a celebration. Recent PBs are flagged **NEW** on the dashboard.

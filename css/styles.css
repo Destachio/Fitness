@@ -265,6 +265,23 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .water-btn.add .icon { color: var(--on-accent); }
 .water-btn:active { transform: scale(.97); }
 
+/* ---- verse of the day (debrief) ---- */
+.verse-card {
+  position: relative; overflow: hidden;
+  border-color: var(--line-strong);
+  background:
+    linear-gradient(180deg, rgba(226, 56, 45, .05), transparent 40%),
+    linear-gradient(180deg, var(--surface), var(--bg-2));
+}
+.verse-card::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--amber); box-shadow: 0 0 12px rgba(226, 56, 45, .5);
+}
+.verse-head { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: .66rem; font-weight: 800; text-transform: uppercase; letter-spacing: .16em; margin-bottom: 10px; }
+.verse-head .icon { color: var(--amber); }
+.verse-text { font-size: 1.02rem; line-height: 1.5; color: var(--text); font-style: italic; }
+.verse-ref { margin-top: 10px; font-family: var(--mono); font-size: .76rem; font-weight: 700; letter-spacing: .06em; color: var(--accent); text-transform: uppercase; }
+
 /* ---- bottom nav ---- */
 .bottom-nav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 70;
