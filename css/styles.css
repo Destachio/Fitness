@@ -248,6 +248,22 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .pb-tag { background: rgba(255, 176, 46, .15); color: var(--amber); font-size: .64rem; font-weight: 800; padding: 3px 8px; border-radius: 3px; letter-spacing: .06em; text-transform: uppercase; animation: pop .3s ease; }
 @keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
+/* ---- hydration ---- */
+.water-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.water-readout { display: flex; flex-direction: column; gap: 1px; }
+.water-count { font-family: var(--mono); font-size: 1.55rem; font-weight: 800; color: var(--accent); }
+.water-sub { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.water-done { display: inline-flex; align-items: center; gap: 5px; color: var(--good); font-size: .66rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; border: 1px solid rgba(70, 224, 138, .4); padding: 5px 9px; border-radius: 4px; white-space: nowrap; }
+.water-glasses { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.glass { width: 40px; height: 44px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 6px; background: var(--bg-2); color: var(--faint); transition: transform .12s ease, color .15s ease, box-shadow .2s ease, background .2s ease; }
+.glass.filled { color: var(--accent); border-color: rgba(47, 230, 255, .4); background: rgba(47, 230, 255, .1); box-shadow: var(--glow); }
+.glass:active { transform: scale(.88); }
+.water-controls { display: grid; grid-template-columns: auto 1fr; gap: 10px; }
+.water-btn { background: var(--surface-2); border: 1px solid var(--line); color: var(--text); border-radius: var(--radius); font-weight: 800; font-size: 1.15rem; padding: 11px 0; min-width: 56px; }
+.water-btn.add { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #03161c; border: none; box-shadow: var(--glow); font-size: .82rem; text-transform: uppercase; letter-spacing: .07em; }
+.water-btn.add .icon { color: #03161c; }
+.water-btn:active { transform: scale(.97); }
+
 /* ---- bottom nav ---- */
 .bottom-nav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 70;

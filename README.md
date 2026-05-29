@@ -16,6 +16,9 @@ offline once installed.
 - **Workout logging** — every session shows the day, exercises, target sets/reps,
   coaching notes, and inputs for the **weight** and **reps completed** per set.
   Tick sets off, add/remove sets, leave a note, and a built-in rest timer.
+- **Hydration counter** — a daily water tracker on the Base page: tap glasses
+  (or +/−) toward a goal (default 8 ≈ 2 L), resets each day, with a goal you can
+  set in Command.
 - **Body weight tracker** — log weigh-ins (one per day), see the latest weight,
   the change since you started, and a trend chart on the dashboard.
 - **Personal best badges** 🏆 — the app tracks your best lift for each exercise.

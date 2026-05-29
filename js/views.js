@@ -70,6 +70,9 @@ export function dashboard() {
     ]));
   }
 
+  // Daily hydration counter
+  wrap.appendChild(hydrationCard());
+
   // Body weight tracker
   wrap.appendChild(bodyweightCard());
 
@@ -122,6 +125,54 @@ function exerciseProgressCard() {
   card.appendChild(select);
   card.appendChild(body);
   if (exes.length) draw();
+  return card;
+}
+
+function hydrationCard() {
+  const goal = S.getWaterGoal();
+  const card = el('div.card.water-card');
+  card.appendChild(el('h3.card-title', { text: 'Hydration' }));
+  const head = el('div.water-head');
+  const glasses = el('div.water-glasses');
+  const controls = el('div.water-controls');
+  card.append(head, glasses, controls);
+
+  const fmtL = (n) => (n * 0.25).toFixed(2).replace(/\.?0+$/, '');
+
+  function draw() {
+    const count = S.getWaterCount();
+    const hit = count >= goal;
+    clear(head);
+    head.appendChild(el('div.water-readout', {}, [
+      el('span.water-count', { text: `${count}/${goal}` }),
+      el('span.water-sub', { text: `glasses · ${fmtL(count)} of ${fmtL(goal)} L` }),
+    ]));
+    if (hit) head.appendChild(el('span.water-done', {}, [icon('check', { size: 14 }), el('span', { text: 'Goal hit' })]));
+
+    clear(glasses);
+    for (let i = 0; i < goal; i++) {
+      const filled = i < count;
+      glasses.appendChild(el(`button.glass${filled ? '.filled' : ''}`, {
+        'aria-label': `glass ${i + 1}`,
+        // tapping the topmost filled glass empties it; otherwise fill up to here
+        onclick: () => { S.setWaterCount(filled && i === count - 1 ? i : i + 1); draw(); },
+      }, icon('droplet', { size: 18 })));
+    }
+
+    clear(controls);
+    controls.append(
+      el('button.water-btn', { 'aria-label': 'remove a glass', onclick: () => { S.addWater(-1); draw(); } }, '−'),
+      el('button.water-btn.add', {
+        onclick: () => {
+          const before = S.getWaterCount();
+          S.addWater(1);
+          draw();
+          if (before < goal && S.getWaterCount() >= goal) toast('Hydration goal hit! 💧');
+        },
+      }, [icon('droplet', { size: 16 }), el('span', { text: 'Add glass' })]),
+    );
+  }
+  draw();
   return card;
 }
 
@@ -499,6 +550,7 @@ export function parent() {
   const unitSel = el('select.select', { onchange: (e) => S.saveSettings({ weightUnit: e.target.value }) });
   ['kg', 'lb'].forEach((u) => unitSel.appendChild(el('option', { value: u, text: u, selected: s.weightUnit === u ? 'selected' : null })));
   set.appendChild(field('Weight unit', unitSel));
+  set.appendChild(field('Daily water goal (glasses ~250 ml)', el('input.input', { type: 'number', inputmode: 'numeric', min: '1', max: '20', value: s.waterGoal, onchange: (e) => S.saveSettings({ waterGoal: Math.max(1, Math.min(20, parseInt(e.target.value, 10) || 8)) }) })));
   set.appendChild(field('Program start date', el('input.input', { type: 'date', value: s.startDate || '', onchange: (e) => S.saveSettings({ startDate: e.target.value }) })));
   wrap.appendChild(set);
 

@@ -6,6 +6,7 @@ const KEYS = {
   logs: 'fit.logs.v1',
   settings: 'fit.settings.v1',
   bodyweight: 'fit.bodyweight.v1',
+  water: 'fit.water.v1',
 };
 
 function read(key, fallback) {
@@ -251,6 +252,24 @@ export function deleteBodyweight(id) {
   write(KEYS.bodyweight, read(KEYS.bodyweight, []).filter((e) => e.id !== id));
 }
 
+// ---- Hydration (daily water counter, resets each calendar day) ----
+function todayKey() { return new Date().toISOString().slice(0, 10); }
+export function getWaterGoal() { return getSettings().waterGoal || 8; }
+export function getWaterCount(date) {
+  return read(KEYS.water, {})[date || todayKey()] || 0;
+}
+export function setWaterCount(count, date) {
+  const map = read(KEYS.water, {});
+  const d = date || todayKey();
+  const n = Math.max(0, Math.min(50, Math.round(count)));
+  if (n === 0) delete map[d]; else map[d] = n;
+  write(KEYS.water, map);
+  return n;
+}
+export function addWater(delta = 1, date) {
+  return setWaterCount(getWaterCount(date) + delta, date);
+}
+
 // ---- Personal bests ----
 // Best working set inside one logged exercise entry. Cardio is excluded from
 // personal bests (it's tracked as a chart, not a "beat your record" lift).
@@ -343,6 +362,7 @@ export function exportData() {
     logs: getLogs(),
     settings: getSettings(),
     bodyweight: getBodyweights(),
+    water: read(KEYS.water, {}),
     exportedAt: new Date().toISOString(),
   }, null, 2);
 }
@@ -352,4 +372,5 @@ export function importData(json) {
   if (data.logs) write(KEYS.logs, data.logs);
   if (data.settings) write(KEYS.settings, data.settings);
   if (data.bodyweight) write(KEYS.bodyweight, data.bodyweight);
+  if (data.water) write(KEYS.water, data.water);
 }
