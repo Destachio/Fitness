@@ -1,7 +1,14 @@
 // charts.js — tiny dependency-free SVG charts.
 
 const NS = 'http://www.w3.org/2000/svg';
-const ACCENT = '#22d3ff';
+// Tactical monochrome palette (matches CSS tokens).
+const ACCENT = '#cdd2d6';                 // light steel — lines/fills
+const ACCENT_GLOW = 'rgba(205,212,218,.45)';
+const INK = '#e7e9ea';                    // bright readout text
+const MUTE = '#8b9196';                   // muted labels
+const FAINT = '#5b6166';                  // axis labels
+const GRID = 'rgba(255,255,255,.06)';
+const DOT_FILL = '#0e0f11';               // dot centre (matches --bg-2)
 
 function svgEl(tag, attrs) {
   const el = document.createElementNS(NS, tag);
@@ -25,13 +32,13 @@ export function progressRing(value, max, { size = 132, stroke = 12, label, sub }
     stroke: ACCENT, 'stroke-width': stroke, 'stroke-linecap': 'round',
     'stroke-dasharray': c, 'stroke-dashoffset': c * (1 - pct),
     transform: `rotate(-90 ${size / 2} ${size / 2})`,
-    style: 'filter:drop-shadow(0 0 6px rgba(34,211,255,.6));transition:stroke-dashoffset .6s ease',
+    style: `filter:drop-shadow(0 0 6px ${ACCENT_GLOW});transition:stroke-dashoffset .6s ease`,
   });
   svg.appendChild(arc);
 
   const big = svgEl('text', {
     x: size / 2, y: size / 2 - 2, 'text-anchor': 'middle', 'dominant-baseline': 'middle',
-    fill: '#e9eef5', 'font-size': size * 0.26, 'font-weight': 700,
+    fill: INK, 'font-size': size * 0.26, 'font-weight': 700,
   });
   big.textContent = label != null ? label : `${Math.round(pct * 100)}%`;
   svg.appendChild(big);
@@ -39,7 +46,7 @@ export function progressRing(value, max, { size = 132, stroke = 12, label, sub }
   if (sub) {
     const small = svgEl('text', {
       x: size / 2, y: size / 2 + size * 0.17, 'text-anchor': 'middle',
-      fill: '#8b98a8', 'font-size': size * 0.1, 'font-weight': 600,
+      fill: MUTE, 'font-size': size * 0.1, 'font-weight': 600,
     });
     small.textContent = sub;
     svg.appendChild(small);
@@ -53,7 +60,7 @@ export function lineChart(points, { height = 160, unit = '' } = {}) {
   const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart', preserveAspectRatio: 'none' });
 
   if (!points.length) {
-    const t = svgEl('text', { x: W / 2, y: H / 2, 'text-anchor': 'middle', fill: '#8b98a8', 'font-size': 13 });
+    const t = svgEl('text', { x: W / 2, y: H / 2, 'text-anchor': 'middle', fill: MUTE, 'font-size': 13 });
     t.textContent = 'No data yet — log a session to see progress.';
     svg.appendChild(t);
     return svg;
@@ -72,8 +79,8 @@ export function lineChart(points, { height = 160, unit = '' } = {}) {
   for (let g = 0; g <= 2; g++) {
     const v = minV + (range * g) / 2;
     const gy = y(v);
-    svg.appendChild(svgEl('line', { x1: padL, y1: gy, x2: W - padR, y2: gy, stroke: 'rgba(255,255,255,.06)', 'stroke-width': 1 }));
-    const lbl = svgEl('text', { x: padL - 6, y: gy + 3, 'text-anchor': 'end', fill: '#6b7787', 'font-size': 9 });
+    svg.appendChild(svgEl('line', { x1: padL, y1: gy, x2: W - padR, y2: gy, stroke: GRID, 'stroke-width': 1 }));
+    const lbl = svgEl('text', { x: padL - 6, y: gy + 3, 'text-anchor': 'end', fill: FAINT, 'font-size': 9 });
     lbl.textContent = Math.round(v);
     svg.appendChild(lbl);
   }
@@ -93,15 +100,15 @@ export function lineChart(points, { height = 160, unit = '' } = {}) {
   svg.appendChild(svgEl('polyline', {
     points: linePts, fill: 'none', stroke: ACCENT, 'stroke-width': 2.5,
     'stroke-linejoin': 'round', 'stroke-linecap': 'round',
-    style: 'filter:drop-shadow(0 0 4px rgba(34,211,255,.5))',
+    style: `filter:drop-shadow(0 0 4px ${ACCENT_GLOW})`,
   }));
 
   // dots + last-value label
   points.forEach((p, i) => {
-    svg.appendChild(svgEl('circle', { cx: x(i), cy: y(p.value), r: 3, fill: '#0b0f17', stroke: ACCENT, 'stroke-width': 2 }));
+    svg.appendChild(svgEl('circle', { cx: x(i), cy: y(p.value), r: 3, fill: DOT_FILL, stroke: ACCENT, 'stroke-width': 2 }));
   });
   const last = points[points.length - 1];
-  const lt = svgEl('text', { x: x(points.length - 1), y: y(last.value) - 8, 'text-anchor': 'end', fill: '#e9eef5', 'font-size': 11, 'font-weight': 700 });
+  const lt = svgEl('text', { x: x(points.length - 1), y: y(last.value) - 8, 'text-anchor': 'end', fill: INK, 'font-size': 11, 'font-weight': 700 });
   lt.textContent = `${last.value}${unit}`;
   svg.appendChild(lt);
 
@@ -124,15 +131,15 @@ export function barChart(bars, { height = 150, unit = '' } = {}) {
     const by = padT + innerH - h;
     svg.appendChild(svgEl('rect', {
       x: bx, y: by, width: bw, height: Math.max(h, 1), rx: 5,
-      fill: b.value > 0 ? ACCENT : 'rgba(255,255,255,.12)',
-      style: b.value > 0 ? 'filter:drop-shadow(0 0 5px rgba(34,211,255,.45))' : '',
+      fill: b.value > 0 ? ACCENT : 'rgba(255,255,255,.10)',
+      style: b.value > 0 ? `filter:drop-shadow(0 0 5px ${ACCENT_GLOW})` : '',
     }));
     if (b.value > 0) {
-      const vt = svgEl('text', { x: bx + bw / 2, y: by - 4, 'text-anchor': 'middle', fill: '#e9eef5', 'font-size': 10, 'font-weight': 700 });
+      const vt = svgEl('text', { x: bx + bw / 2, y: by - 4, 'text-anchor': 'middle', fill: INK, 'font-size': 10, 'font-weight': 700 });
       vt.textContent = `${b.value}${unit}`;
       svg.appendChild(vt);
     }
-    const lt = svgEl('text', { x: bx + bw / 2, y: H - 8, 'text-anchor': 'middle', fill: '#8b98a8', 'font-size': 10 });
+    const lt = svgEl('text', { x: bx + bw / 2, y: H - 8, 'text-anchor': 'middle', fill: MUTE, 'font-size': 10 });
     lt.textContent = b.label;
     svg.appendChild(lt);
   });

@@ -2,8 +2,9 @@
 
 A mobile-first, installable web app to help a young athlete get fit in the gym:
 run a 4-week "mission", log every set, and watch progress on a dashboard.
-Tactical black-ops look — near-black gunmetal UI, neon-cyan HUD accents, a
-reticle app icon, and a monospace readout feel.
+Tactical command-HUD look — near-black gunmetal UI, monochrome steel-grey
+hairlines and accents, tactical red for records/alerts, a reticle app icon, and
+a monospace readout feel.
 
 Built as a **zero-dependency PWA** — plain HTML/CSS/JS, no build step, no backend.
 All data is stored **on the device** (browser `localStorage`), so it works fully

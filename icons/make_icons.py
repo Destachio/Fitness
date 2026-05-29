@@ -2,9 +2,9 @@
 from PIL import Image, ImageDraw, ImageFilter
 import os
 
-BG_TOP = (13, 19, 25)
-BG_BOT = (5, 7, 10)
-ACCENT = (47, 230, 255)
+BG_TOP = (24, 26, 28)
+BG_BOT = (8, 9, 10)
+ACCENT = (205, 210, 214)
 OUT = os.path.dirname(__file__)
 
 
