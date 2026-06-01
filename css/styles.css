@@ -282,6 +282,24 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .verse-text { font-size: 1.02rem; line-height: 1.5; color: var(--text); font-style: italic; }
 .verse-ref { margin-top: 10px; font-family: var(--mono); font-size: .76rem; font-weight: 700; letter-spacing: .06em; color: var(--accent); text-transform: uppercase; }
 
+/* ---- twitch reward streak ---- */
+.reward-card.unlocked { border-color: rgba(145, 71, 255, .5); box-shadow: 0 0 18px rgba(145, 71, 255, .22); }
+.reward-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.reward-title { margin-bottom: 0; }
+.reward-card.unlocked .reward-title::before, .reward-card.unlocked .reward-title .icon { color: #9147ff; }
+.reward-count { font-family: var(--mono); font-size: 1.05rem; font-weight: 800; color: var(--accent); }
+.reward-card.unlocked .reward-count { color: #b794ff; }
+.reward-pips { display: flex; gap: 6px; margin-bottom: 12px; }
+.pip { flex: 1; height: 8px; border-radius: 2px; background: var(--surface-2); border: 1px solid var(--line); }
+.pip.on { background: var(--accent); border-color: transparent; box-shadow: var(--glow); }
+.reward-card.unlocked .pip.on { background: linear-gradient(90deg, #9147ff, #b794ff); box-shadow: 0 0 8px rgba(145, 71, 255, .55); }
+.reward-ready { font-weight: 800; color: #b794ff; margin-bottom: 12px; letter-spacing: .02em; }
+.reward-btn { background: linear-gradient(135deg, #9147ff, #6f31cc); color: #fff; }
+.reward-btn .icon { color: #fff; }
+.reward-locked { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: .82rem; font-weight: 600; background: var(--bg-2); border: 1px dashed var(--line); border-radius: var(--radius); padding: 12px 14px; }
+.reward-locked .icon { color: var(--faint); }
+.reward-meter { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; }
+
 /* ---- bottom nav ---- */
 .bottom-nav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 70;

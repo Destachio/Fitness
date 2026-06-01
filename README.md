@@ -22,6 +22,10 @@ offline once installed.
   set in Command.
 - **Body weight tracker** — log weigh-ins (one per day), see the latest weight,
   the change since you started, and a trend chart on the dashboard.
+- **Twitch reward streak** — every completed session counts toward a goal
+  (default 6). Hitting it unlocks a one-time Twitch stream, claimable only
+  between **9 PM and midnight**; watching opens the channel and resets the
+  streak. Set the channel and goal in Command.
 - **Verse of the Day** — a motivational Bible verse (NKJV) on the Base page,
   below the water tracker, themed around strength, courage, and perseverance.
   Updates daily, rotating through the set and consistent all day.

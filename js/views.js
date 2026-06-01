@@ -71,6 +71,9 @@ export function dashboard() {
     ]));
   }
 
+  // Reward streak (Twitch unlock)
+  wrap.appendChild(rewardCard());
+
   // Daily hydration counter
   wrap.appendChild(hydrationCard());
 
@@ -129,6 +132,58 @@ function exerciseProgressCard() {
   card.appendChild(select);
   card.appendChild(body);
   if (exes.length) draw();
+  return card;
+}
+
+function rewardCard() {
+  const goal = S.getRewardGoal();
+  const count = Math.min(S.getRewardCount(), goal);
+  const unlocked = S.rewardUnlocked();
+  const inWindow = S.inClaimWindow();
+  const channel = (S.getSettings().twitchChannel || '').trim();
+
+  const card = el(`div.card.reward-card${unlocked ? ' unlocked' : ''}`);
+  card.appendChild(el('div.reward-head', {}, [
+    el('div.card-title.reward-title', {}, [icon('gamepad', { size: 16 }), el('span', { text: 'Twitch Reward' })]),
+    el('span.reward-count', { text: `${count}/${goal}` }),
+  ]));
+
+  // pip row — one block per required session
+  const pips = el('div.reward-pips');
+  for (let i = 0; i < goal; i++) pips.appendChild(el(`span.pip${i < count ? '.on' : ''}`));
+  card.appendChild(pips);
+
+  if (!unlocked) {
+    const left = goal - count;
+    card.appendChild(el('p.hint', { text: `Complete ${left} more session${left === 1 ? '' : 's'} to unlock a Twitch stream session.` }));
+    return card;
+  }
+
+  // Unlocked
+  if (!channel) {
+    card.appendChild(el('p.reward-ready', { text: '🎮 Reward unlocked!' }));
+    card.appendChild(el('p.hint', { text: 'Ask a parent to set the Twitch channel in Command to enable the stream.' }));
+    return card;
+  }
+
+  card.appendChild(el('p.reward-ready', { text: '🎮 Reward unlocked — one stream session!' }));
+  if (inWindow) {
+    card.appendChild(el('button.cta.reward-btn', {
+      onclick: () => {
+        if (!confirm('Watch your Twitch stream now? This uses your reward and resets the streak to 0.')) return;
+        if (S.claimReward()) {
+          window.open(S.twitchUrl(), '_blank', 'noopener');
+          toast('Enjoy! Streak reset — earn it again 💪');
+          rerender();
+        } else {
+          toast('Reward not available right now', 'err');
+          rerender();
+        }
+      },
+    }, [icon('play'), el('span', {}, [el('strong', { text: 'Watch stream' }), el('em', { text: 'Uses reward · resets streak' })])]));
+  } else {
+    card.appendChild(el('div.reward-locked', {}, [icon('play', { size: 16 }), el('span', { text: `Unlocks at ${S.claimWindowLabel()} — come back tonight` })]));
+  }
   return card;
 }
 
@@ -460,9 +515,15 @@ export function session(id) {
 
   wrap.appendChild(el('button.cta.finish', {
     onclick: () => {
+      const firstCompletion = !log.completed;
       log.completed = true;
       log.date = log.date || new Date().toISOString();
       S.saveLog(log);
+      // Count toward the Twitch reward streak (only the first time it completes).
+      if (firstCompletion) {
+        const count = S.bumpRewardOnComplete();
+        if (count >= S.getRewardGoal()) toast('Reward unlocked! 🎮 Claim it after 9 PM');
+      }
       const pbs = S.detectNewPBs(log);
       if (pbs.length) {
         const unit = S.getSettings().weightUnit;
@@ -470,7 +531,7 @@ export function session(id) {
         const val = top.type === 'time' ? `${top.value}s` : `${top.value} ${unit}`;
         toast(pbs.length === 1 ? `New PB! ${top.name} ${val} 🏆` : `${pbs.length} new PBs! 🏆`);
         if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
-      } else {
+      } else if (!(S.getRewardCount() >= S.getRewardGoal() && firstCompletion)) {
         toast('Mission complete! 💪');
       }
       go('#/');
@@ -567,6 +628,18 @@ export function parent() {
   set.appendChild(field('Daily water goal (glasses ~250 ml)', el('input.input', { type: 'number', inputmode: 'numeric', min: '1', max: '20', value: s.waterGoal, onchange: (e) => S.saveSettings({ waterGoal: Math.max(1, Math.min(20, parseInt(e.target.value, 10) || 8)) }) })));
   set.appendChild(field('Program start date', el('input.input', { type: 'date', value: s.startDate || '', onchange: (e) => S.saveSettings({ startDate: e.target.value }) })));
   wrap.appendChild(set);
+
+  // Reward streak settings
+  const rew = el('div.card');
+  rew.appendChild(el('h3.card-title', { text: 'Twitch reward' }));
+  rew.appendChild(el('p.hint', { text: 'After this many completed sessions, a one-time Twitch stream unlocks — claimable only between 9 PM and midnight. Watching it resets the streak.' }));
+  rew.appendChild(field('Sessions to unlock', el('input.input', { type: 'number', inputmode: 'numeric', min: '1', max: '30', value: s.rewardGoal, onchange: (e) => S.saveSettings({ rewardGoal: Math.max(1, Math.min(30, parseInt(e.target.value, 10) || 6)) }) })));
+  rew.appendChild(field('Twitch channel (handle or URL)', el('input.input', { type: 'text', placeholder: 'e.g. ninja or twitch.tv/ninja', value: s.twitchChannel || '', onchange: (e) => S.saveSettings({ twitchChannel: e.target.value.trim() }) })));
+  rew.appendChild(el('div.reward-meter', {}, [
+    el('span.hint', { text: `Current streak: ${S.getRewardCount()}/${S.getRewardGoal()}` }),
+    el('button.mini.ghost', { onclick: () => { S.resetReward(); toast('Streak reset'); rerender(); }, title: 'Reset streak to zero' }, 'Reset streak'),
+  ]));
+  wrap.appendChild(rew);
 
   // Plan editor
   wrap.appendChild(planEditor());

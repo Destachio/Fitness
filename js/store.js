@@ -7,6 +7,7 @@ const KEYS = {
   settings: 'fit.settings.v1',
   bodyweight: 'fit.bodyweight.v1',
   water: 'fit.water.v1',
+  reward: 'fit.reward.v1',
 };
 
 function read(key, fallback) {
@@ -27,6 +28,9 @@ const DEFAULT_SETTINGS = {
   startDate: null,        // ISO date string of program day 1
   pinHash: null,          // parent PIN (lightweight child-lock, not real security)
   weightUnit: 'kg',
+  waterGoal: 8,           // glasses per day (~250 ml each)
+  rewardGoal: 6,          // completed sessions needed to unlock the Twitch reward
+  twitchChannel: '',      // channel handle or URL the reward opens
 };
 
 export function getSettings() {
@@ -271,6 +275,66 @@ export function addWater(delta = 1, date) {
   return setWaterCount(getWaterCount(date) + delta, date);
 }
 
+// ---- Reward streak (Twitch unlock) ----
+// Every completed session counts +1 toward the goal (default 6). Hitting the
+// goal unlocks a Twitch reward, claimable only in the 9 PM–midnight window.
+// Watching opens the channel and resets the counter to 0.
+const REWARD_HOUR = 21; // 9 PM (claim window: 21:00–23:59 local time)
+
+export function getRewardGoal() { return getSettings().rewardGoal || 6; }
+
+// Stored counter; falls back to completed-session count on first run so an
+// existing athlete's history seeds their progress sensibly.
+export function getRewardCount() {
+  const r = read(KEYS.reward, null);
+  if (r && typeof r.count === 'number') return r.count;
+  return completedCount() % getRewardGoal();
+}
+function setRewardCount(count) {
+  const r = read(KEYS.reward, {});
+  r.count = Math.max(0, count);
+  write(KEYS.reward, r);
+  return r.count;
+}
+// Called when a session is completed (only the first time it flips to done).
+export function bumpRewardOnComplete() {
+  return setRewardCount(getRewardCount() + 1);
+}
+export function rewardUnlocked() {
+  return getRewardCount() >= getRewardGoal();
+}
+// Is it currently inside the 9 PM–midnight claim window?
+export function inClaimWindow(now = new Date()) {
+  return now.getHours() >= REWARD_HOUR;
+}
+export function claimWindowLabel() { return '9 PM'; }
+
+// Normalise a channel handle or URL into a launchable Twitch URL.
+export function twitchUrl() {
+  const raw = (getSettings().twitchChannel || '').trim();
+  if (!raw) return '';
+  if (/^https?:\/\//i.test(raw)) return raw;
+  const handle = raw.replace(/^@/, '').replace(/^twitch\.tv\//i, '');
+  return 'https://www.twitch.tv/' + encodeURIComponent(handle);
+}
+
+// Parent override: reset the streak to zero from Command.
+export function resetReward() {
+  const r = read(KEYS.reward, {});
+  r.count = 0;
+  write(KEYS.reward, r);
+}
+
+// Claim the reward: only valid when unlocked AND in-window. Resets to 0.
+export function claimReward(now = new Date()) {
+  if (!rewardUnlocked() || !inClaimWindow(now)) return false;
+  const r = read(KEYS.reward, {});
+  r.count = 0;
+  r.lastClaimed = now.toISOString();
+  write(KEYS.reward, r);
+  return true;
+}
+
 // ---- Personal bests ----
 // Best working set inside one logged exercise entry. Cardio is excluded from
 // personal bests (it's tracked as a chart, not a "beat your record" lift).
@@ -364,6 +428,7 @@ export function exportData() {
     settings: getSettings(),
     bodyweight: getBodyweights(),
     water: read(KEYS.water, {}),
+    reward: read(KEYS.reward, {}),
     exportedAt: new Date().toISOString(),
   }, null, 2);
 }
@@ -374,4 +439,5 @@ export function importData(json) {
   if (data.settings) write(KEYS.settings, data.settings);
   if (data.bodyweight) write(KEYS.bodyweight, data.bodyweight);
   if (data.water) write(KEYS.water, data.water);
+  if (data.reward) write(KEYS.reward, data.reward);
 }
