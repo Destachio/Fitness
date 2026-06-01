@@ -16,15 +16,17 @@ export const PROGRESSION = [
 ];
 
 // type: 'reps' = weight + reps;  'time' = seconds held;  'cardio' = minutes (conditioning)
+// fixed: true  = skip the weekly progression ramp (e.g. a constant warm-up)
 export const DEFAULT_PLAN = {
   name: '4-Week Foundation',
-  version: 2, // bump to push additive plan updates (e.g. cardio) to existing devices
+  version: 3, // bump to push additive plan updates to existing devices
   createdAt: null, // set when seeded
   days: [
     {
       id: 'dayA',
       name: 'Day A · Full Body',
       exercises: [
+        { id: 'warmup', name: 'Incline Walk (Warm-up)', type: 'cardio', sets: 1, reps: 10, rest: 0, fixed: true, note: '10 min · treadmill level 5 · 10° incline. Get the blood flowing before lifting.' },
         { id: 'a1', name: 'Goblet Squat',          type: 'reps', sets: 3, reps: 10, rest: 90, note: 'Hold one dumbbell at your chest. Sit back, chest up, knees out.' },
         { id: 'a2', name: 'Machine Chest Press',    type: 'reps', sets: 3, reps: 10, rest: 90, note: 'Push smoothly. Don’t slam the lockout.' },
         { id: 'a3', name: 'Lat Pulldown',           type: 'reps', sets: 3, reps: 10, rest: 90, note: 'Pull the bar to your upper chest, squeeze your back.' },
@@ -38,6 +40,7 @@ export const DEFAULT_PLAN = {
       id: 'dayB',
       name: 'Day B · Full Body',
       exercises: [
+        { id: 'warmup', name: 'Incline Walk (Warm-up)', type: 'cardio', sets: 1, reps: 10, rest: 0, fixed: true, note: '10 min · treadmill level 5 · 10° incline. Get the blood flowing before lifting.' },
         { id: 'b1', name: 'Leg Press',                  type: 'reps', sets: 3, reps: 12, rest: 90, note: 'Feet shoulder width. Don’t lock the knees hard.' },
         { id: 'b2', name: 'Incline Dumbbell Press',     type: 'reps', sets: 3, reps: 10, rest: 90, note: 'Slight incline. Lower under control.' },
         { id: 'b3', name: 'Assisted Pull-up',           type: 'reps', sets: 3, reps: 8,  rest: 90, note: 'Use the assist pad. Pull chest toward the bar.' },
@@ -51,6 +54,7 @@ export const DEFAULT_PLAN = {
       id: 'dayC',
       name: 'Day C · Full Body',
       exercises: [
+        { id: 'warmup', name: 'Incline Walk (Warm-up)', type: 'cardio', sets: 1, reps: 10, rest: 0, fixed: true, note: '10 min · treadmill level 5 · 10° incline. Get the blood flowing before lifting.' },
         { id: 'c1', name: 'Dumbbell Lunge',     type: 'reps', sets: 3, reps: 10, rest: 90, note: '10 reps each leg. Step out, knee tracks over the foot.' },
         { id: 'c2', name: 'Chest Fly (Pec Deck)',type: 'reps', sets: 3, reps: 12, rest: 60, note: 'Squeeze chest at the middle, slow on the way back.' },
         { id: 'c3', name: 'Machine Row',        type: 'reps', sets: 3, reps: 10, rest: 90, note: 'Drive elbows back, chest against the pad.' },
@@ -66,6 +70,10 @@ export const DEFAULT_PLAN = {
 // Compute the target sets/reps for an exercise in a given week (1-based).
 export function targetFor(exercise, week) {
   const prog = PROGRESSION.find((p) => p.week === week) || PROGRESSION[0];
+  if (exercise.fixed) {
+    // Fixed work (e.g. the warm-up) never ramps — same every week.
+    return { sets: exercise.sets, reps: exercise.reps };
+  }
   if (exercise.type === 'cardio') {
     // Cardio stays a single bout but its duration ramps up over the weeks.
     return { sets: exercise.sets, reps: exercise.reps + prog.addReps };

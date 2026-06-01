@@ -29,9 +29,11 @@ offline once installed.
   Beat it during a workout and a "PB!" tag lights up live; finish the session and
   you get a celebration. Recent PBs are flagged **NEW** on the dashboard.
 - **4-week default plan** — full-body, 3 days/week (A/B/C), tuned for a teen
-  beginner at a commercial gym. Each session ends with a **cardio finisher**
+  beginner at a commercial gym. Every session opens with a **10-min incline-walk
+  warm-up** (treadmill level 5, 10° incline) and ends with a **cardio finisher**
   (row / incline walk / bike intervals) whose duration ramps up over the weeks.
-  Strength sets/reps also progress automatically (reps, then an extra set).
+  Strength sets/reps also progress automatically (reps, then an extra set); the
+  warm-up stays constant.
 - **Parent mode (PIN protected)** — fully customise the plan: rename days, add/
   remove/edit exercises, change sets/reps/rest and coaching notes. Also set the
   athlete's name, weight unit (kg/lb), and start date.

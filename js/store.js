@@ -56,19 +56,20 @@ export function getPlan() {
 }
 
 // Additively bring an existing (possibly customised) plan up to the current
-// default version — e.g. drop in the cardio finishers — without wiping edits.
+// default version — drop in any new default exercises (e.g. the warm-up,
+// cardio finishers) at their proper position — without wiping the user's edits.
 function migratePlan(plan) {
   if (plan.version === DEFAULT_PLAN.version) return plan;
-  let changed = false;
   for (const defDay of DEFAULT_PLAN.days) {
     const day = plan.days.find((d) => d.id === defDay.id);
     if (!day) continue;
-    for (const defEx of defDay.exercises) {
-      if (defEx.type === 'cardio' && !day.exercises.some((e) => e.id === defEx.id)) {
-        day.exercises.push(structuredClone(defEx));
-        changed = true;
-      }
-    }
+    defDay.exercises.forEach((defEx, defIdx) => {
+      if (day.exercises.some((e) => e.id === defEx.id)) return;
+      // Insert at the same index it occupies in the default day so ordering
+      // (warm-up first, finisher last) is preserved.
+      const at = Math.min(defIdx, day.exercises.length);
+      day.exercises.splice(at, 0, structuredClone(defEx));
+    });
   }
   plan.version = DEFAULT_PLAN.version;
   write(KEYS.plan, plan);
