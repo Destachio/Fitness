@@ -1,10 +1,11 @@
 // views.js — screen render functions. Each returns a DOM node.
 import * as S from './store.js';
-import { progressRing, lineChart, barChart } from './charts.js';
+import { progressRing, lineChart, barChart, radarChart } from './charts.js';
 import { el, clear, icon, toast, fmtDate } from './ui.js';
 import { PROGRESSION, PROGRAM_WEEKS, targetFor } from './data.js';
 import { verseForDate } from './verses.js';
 import { allBadges, earnedBadges, earnedBadgeIdSet, badgeCounts } from './badges.js';
+import { METRICS, TIER_LABELS, scoreOf, tierName, parseValue, fmtValue } from './standards.js';
 
 const go = (hash) => { location.hash = hash; };
 
@@ -571,6 +572,62 @@ export function plan() {
   });
 
   wrap.appendChild(el('button.btn', { onclick: () => go('#/parent') }, [icon('gear', { size: 18 }), el('span', { text: 'Edit plan (parent)' })]));
+  return wrap;
+}
+
+// ---------------- STANDARDS (radar) ----------------
+export function standards() {
+  const wrap = el('div.screen');
+  wrap.appendChild(header('Performance Standards', 'Test yourself, then chart your progress vs the tiers.'));
+
+  const std = S.getStandards();
+  const axes = METRICS.map((m) => ({ short: m.short, score: std[m.key] != null ? scoreOf(std[m.key], m.B) : 0 }));
+
+  // Radar
+  const radarBox = el('div.card.radar-card');
+  radarBox.appendChild(radarChart(axes, { tierLabels: TIER_LABELS }));
+  // legend
+  radarBox.appendChild(el('div.radar-legend', {}, TIER_LABELS.map((t, i) =>
+    el('span.legend-item', {}, [el(`span.legend-ring r${i + 1}`), el('span', { text: t })]))));
+  wrap.appendChild(radarBox);
+
+  // Benchmark inputs
+  const card = el('div.card');
+  card.appendChild(el('h3.card-title', { text: 'Your results' }));
+  card.appendChild(el('p.hint', { text: 'Enter your best for each test. Standard / Elite / Be-a-Pro targets are shown; the radar updates instantly.' }));
+
+  METRICS.forEach((m) => {
+    const raw = std[m.key];
+    const score = raw != null ? scoreOf(raw, m.B) : 0;
+    const row = el('div.bench-row');
+    row.appendChild(el('div.bench-top', {}, [
+      el('div.bench-name', {}, [el('strong', { text: m.label }), el('span.muted', { text: m.hint })]),
+      el(`span.bench-tier t${Math.min(3, Math.floor(score))}`, { text: raw != null ? tierName(score) : '—' }),
+    ]));
+    const input = el('input.input.bench-input', {
+      type: m.kind === 'time' ? 'text' : 'number',
+      inputmode: m.kind === 'time' ? 'text' : 'decimal',
+      placeholder: m.kind === 'time' ? 'mm:ss' : m.unit,
+      value: raw != null ? fmtValue(m.kind, raw) : '',
+      onchange: (e) => {
+        const v = parseValue(m.kind, e.target.value);
+        S.setStandard(m.key, v);
+        rerender();
+      },
+    });
+    row.appendChild(el('div.bench-entry', {}, [
+      input,
+      el('div.bench-targets', {}, [
+        el('span.bench-unit', { text: m.unit }),
+        el('span.bench-goals', { text: `${m.tiers[0]} · ${m.tiers[1]} · ${m.tiers[2]}` }),
+      ]),
+    ]));
+    card.appendChild(row);
+  });
+  wrap.appendChild(card);
+
+  // Badges live here too (progression overview)
+  wrap.appendChild(badgesCard());
   return wrap;
 }
 

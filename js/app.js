@@ -6,6 +6,7 @@ import { getPlan } from './store.js';
 const ROUTES = [
   { hash: '#/', view: views.dashboard, nav: 'dashboard', label: 'Base', icon: 'dashboard' },
   { hash: '#/today', view: views.today, nav: 'today', label: 'Train', icon: 'dumbbell' },
+  { hash: '#/standards', view: views.standards, nav: 'standards', label: 'Standards', icon: 'target' },
   { hash: '#/plan', view: views.plan, nav: 'plan', label: 'Briefing', icon: 'calendar' },
   { hash: '#/parent', view: views.parent, nav: 'parent', label: 'Command', icon: 'gear' },
 ];

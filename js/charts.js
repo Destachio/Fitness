@@ -145,3 +145,51 @@ export function barChart(bars, { height = 150, unit = '' } = {}) {
   });
   return svg;
 }
+
+// Radar / spider chart for the performance standards.
+// axes: [{ short, score }] with score in 0..3. Rings mark the 3 tiers.
+export function radarChart(axes, { tierLabels = ['Standard', 'Elite', 'Pro'] } = {}) {
+  const W = 340, H = 320, cx = W / 2, cy = H / 2 + 6, R = 118, MAX = 3;
+  const N = axes.length;
+  const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart radar', preserveAspectRatio: 'xMidYMid meet' });
+  const ang = (i) => -Math.PI / 2 + (i * 2 * Math.PI) / N;
+  const pt = (i, r) => [cx + r * Math.cos(ang(i)), cy + r * Math.sin(ang(i))];
+  const polyPoints = (r) => axes.map((_, i) => pt(i, r).join(',')).join(' ');
+
+  // tier rings (concentric polygons) at score 1, 2, 3
+  for (let t = 1; t <= MAX; t++) {
+    const r = (t / MAX) * R;
+    svg.appendChild(svgEl('polygon', {
+      points: polyPoints(r), fill: 'none',
+      stroke: t === MAX ? 'rgba(255,255,255,.28)' : 'rgba(255,255,255,.13)', 'stroke-width': t === MAX ? 1.3 : 1,
+    }));
+    // tier label along the top spoke
+    const [lx, ly] = pt(0, r);
+    const lbl = svgEl('text', { x: lx + 4, y: ly + 3, fill: FAINT, 'font-size': 7.5, 'font-weight': 700 });
+    lbl.textContent = (tierLabels[t - 1] || '').toUpperCase();
+    svg.appendChild(lbl);
+  }
+
+  // spokes + axis labels
+  axes.forEach((a, i) => {
+    const [ex, ey] = pt(i, R);
+    svg.appendChild(svgEl('line', { x1: cx, y1: cy, x2: ex, y2: ey, stroke: GRID, 'stroke-width': 1 }));
+    const [lx, ly] = pt(i, R + 16);
+    const anchor = Math.abs(lx - cx) < 12 ? 'middle' : lx > cx ? 'start' : 'end';
+    const t = svgEl('text', { x: lx, y: ly + 3, 'text-anchor': anchor, fill: MUTE, 'font-size': 9, 'font-weight': 700 });
+    t.textContent = a.short;
+    svg.appendChild(t);
+  });
+
+  // athlete polygon
+  const aPts = axes.map((a, i) => pt(i, (Math.max(0, Math.min(MAX, a.score)) / MAX) * R).join(',')).join(' ');
+  svg.appendChild(svgEl('polygon', {
+    points: aPts, fill: 'rgba(205,212,218,.18)', stroke: ACCENT, 'stroke-width': 2,
+    'stroke-linejoin': 'round', style: `filter:drop-shadow(0 0 4px ${ACCENT_GLOW})`,
+  }));
+  axes.forEach((a, i) => {
+    const [x, y] = pt(i, (Math.max(0, Math.min(MAX, a.score)) / MAX) * R);
+    if (a.score > 0) svg.appendChild(svgEl('circle', { cx: x, cy: y, r: 3, fill: DOT_FILL, stroke: ACCENT, 'stroke-width': 2 }));
+  });
+  return svg;
+}

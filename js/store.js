@@ -7,6 +7,7 @@ const KEYS = {
   settings: 'fit.settings.v1',
   bodyweight: 'fit.bodyweight.v1',
   water: 'fit.water.v1',
+  standards: 'fit.standards.v1',
 };
 
 function read(key, fallback) {
@@ -290,6 +291,20 @@ export function waterGoalDaysHit() {
   return Object.values(read(KEYS.water, {})).filter((c) => c >= goal).length;
 }
 
+// ---- Performance standards (radar benchmark results) ----
+export function getStandards() { return read(KEYS.standards, {}); }
+export function getStandard(key) {
+  const v = getStandards()[key];
+  return v == null ? null : v;
+}
+export function setStandard(key, value) {
+  const map = read(KEYS.standards, {});
+  if (value == null || Number.isNaN(value)) delete map[key];
+  else map[key] = value;
+  write(KEYS.standards, map);
+  return map[key];
+}
+
 // ---- Personal bests ----
 // Best working set inside one logged exercise entry. Cardio is excluded from
 // personal bests (it's tracked as a chart, not a "beat your record" lift).
@@ -383,6 +398,7 @@ export function exportData() {
     settings: getSettings(),
     bodyweight: getBodyweights(),
     water: read(KEYS.water, {}),
+    standards: read(KEYS.standards, {}),
     exportedAt: new Date().toISOString(),
   }, null, 2);
 }
@@ -393,4 +409,5 @@ export function importData(json) {
   if (data.settings) write(KEYS.settings, data.settings);
   if (data.bodyweight) write(KEYS.bodyweight, data.bodyweight);
   if (data.water) write(KEYS.water, data.water);
+  if (data.standards) write(KEYS.standards, data.standards);
 }

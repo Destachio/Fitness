@@ -22,10 +22,16 @@ offline once installed.
   set in Command.
 - **Body weight tracker** — log weigh-ins (one per day), see the latest weight,
   the change since you started, and a trend chart on the dashboard.
-- **Twitch reward streak** — every completed session counts toward a goal
-  (default 6). Hitting it unlocks a one-time Twitch stream, claimable only
-  between **9 PM and midnight**; watching opens the channel and resets the
-  streak. Set the channel and goal in Command.
+- **Progression badges** 🎖️ — 17 achievements earned live from real progress
+  (sessions, streaks, PBs, hydration, body-weight logs, and benchmark tiers).
+  Earned/locked grid on the Base and Standards screens, with an unlock toast.
+- **Performance Standards radar** 🎯 — a spider chart across 7 benchmarks
+  (Bench, Trap Bar Deadlift, 800 m Run, Broad Jump, Farmer's Carry, Pull-ups,
+  Plank) plotted against **The Standard / Elite / Be-a-Pro** tiers. Enter your
+  test results and watch the shape grow toward the outer rings.
+- **Two programs** — switch between **4-Week Foundation** (beginner) and a
+  **MARSOC PT** program (Raider-style strength, endurance/ruck, and grit) in
+  Command; switching keeps your logged history.
 - **Verse of the Day** — a motivational Bible verse (NKJV) on the Base page,
   below the water tracker, themed around strength, courage, and perseverance.
   Updates daily, rotating through the set and consistent all day.

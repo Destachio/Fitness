@@ -1,5 +1,6 @@
 // badges.js — progression achievements, earned live from stored progress.
 import * as S from './store.js';
+import { METRICS, scoreOf } from './standards.js';
 
 // Each badge: { id, name, desc, icon (emoji), test(ctx) -> bool }.
 // ctx is a snapshot of the athlete's stats, computed once per evaluation.
@@ -18,9 +19,14 @@ const DEFS = [
   { id: 'checkpoint',    name: 'Checkpoint',     icon: '⚖️', desc: 'Log your body weight',               test: (c) => c.weighIns >= 1 },
   { id: 'hydrated',      name: 'Hydrated',       icon: '💧', desc: 'Hit your water goal for a day',       test: (c) => c.waterDays >= 1 },
   { id: 'water-disc',    name: 'Water Discipline',icon: '🌊', desc: 'Hit your water goal on 5 days',      test: (c) => c.waterDays >= 5 },
+  { id: 'benchmarked',   name: 'Benchmarked',    icon: '🎯', desc: 'Log a performance standards test',    test: (c) => c.benchmarks >= 1 },
+  { id: 'standard',      name: 'The Standard',   icon: '🛡️', desc: 'Reach The Standard on any test',      test: (c) => c.standardHits >= 1 },
+  { id: 'elite',         name: 'Elite',          icon: '💠', desc: 'Reach Elite on any test',             test: (c) => c.eliteHits >= 1 },
 ];
 
 function snapshot() {
+  const std = S.getStandards();
+  const scores = METRICS.map((m) => (std[m.key] != null ? scoreOf(std[m.key], m.B) : 0));
   return {
     sessions: S.completedCount(),
     programTotal: S.TOTAL_SESSIONS,
@@ -28,6 +34,9 @@ function snapshot() {
     streak: S.trainingStreak(),
     weighIns: S.getBodyweights().length,
     waterDays: S.waterGoalDaysHit(),
+    benchmarks: Object.keys(std).length,
+    standardHits: scores.filter((s) => s >= 1).length,
+    eliteHits: scores.filter((s) => s >= 2).length,
   };
 }
 
