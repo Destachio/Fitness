@@ -1,5 +1,5 @@
 // store.js — all persistence (localStorage) + app state + actions.
-import { DEFAULT_PLAN, PROGRAM_WEEKS, targetFor } from './data.js';
+import { DEFAULT_PLAN, PROGRAM_WEEKS, targetFor, PROGRAMS, programById } from './data.js';
 
 const KEYS = {
   plan: 'fit.plan.v1',
@@ -28,6 +28,7 @@ const DEFAULT_SETTINGS = {
   pinHash: null,          // parent PIN (lightweight child-lock, not real security)
   weightUnit: 'kg',
   waterGoal: 8,           // glasses per day (~250 ml each)
+  activeProgram: 'foundation',
 };
 
 export function getSettings() {
@@ -39,14 +40,21 @@ export function saveSettings(patch) {
   return next;
 }
 
-// ---- Plan ----
+// ---- Plan / programs ----
+export function activeProgramId() { return getSettings().activeProgram || 'foundation'; }
+export const PROGRAM_LIST = PROGRAMS.map((p) => ({ id: p.id, name: p.name, desc: p.desc }));
+
+function seedPlan(programId) {
+  const plan = structuredClone(programById(programId).plan);
+  plan.createdAt = new Date().toISOString();
+  write(KEYS.plan, plan);
+  return plan;
+}
+
 export function getPlan() {
   let plan = read(KEYS.plan, null);
   if (!plan) {
-    plan = structuredClone(DEFAULT_PLAN);
-    plan.createdAt = new Date().toISOString();
-    write(KEYS.plan, plan);
-    // Anchor the program start to today on first run.
+    plan = seedPlan(activeProgramId());
     if (!getSettings().startDate) {
       saveSettings({ startDate: new Date().toISOString().slice(0, 10) });
     }
@@ -56,23 +64,30 @@ export function getPlan() {
   return plan;
 }
 
-// Additively bring an existing (possibly customised) plan up to the current
-// default version — drop in any new default exercises (e.g. the warm-up,
-// cardio finishers) at their proper position — without wiping the user's edits.
+// Switch the active program, replacing the plan with that program's template.
+export function loadProgram(programId) {
+  saveSettings({ activeProgram: programId });
+  return seedPlan(programId);
+}
+
+// Additively bring a Foundation plan up to the current default version — drop
+// in any new default exercises (warm-up, cardio finishers) at their proper
+// position — without wiping the user's edits. Only applies to Foundation.
 function migratePlan(plan) {
+  const prog = plan.program || 'foundation';
+  if (prog !== 'foundation') return plan;
   if (plan.version === DEFAULT_PLAN.version) return plan;
   for (const defDay of DEFAULT_PLAN.days) {
     const day = plan.days.find((d) => d.id === defDay.id);
     if (!day) continue;
     defDay.exercises.forEach((defEx, defIdx) => {
       if (day.exercises.some((e) => e.id === defEx.id)) return;
-      // Insert at the same index it occupies in the default day so ordering
-      // (warm-up first, finisher last) is preserved.
       const at = Math.min(defIdx, day.exercises.length);
       day.exercises.splice(at, 0, structuredClone(defEx));
     });
   }
   plan.version = DEFAULT_PLAN.version;
+  plan.program = 'foundation';
   write(KEYS.plan, plan);
   return plan;
 }
@@ -80,11 +95,9 @@ export function savePlan(plan) {
   write(KEYS.plan, plan);
   return plan;
 }
+// Reset the plan to the active program's template.
 export function resetPlanToDefault() {
-  const plan = structuredClone(DEFAULT_PLAN);
-  plan.createdAt = new Date().toISOString();
-  write(KEYS.plan, plan);
-  return plan;
+  return seedPlan(activeProgramId());
 }
 
 export function getDay(dayId) {

@@ -19,6 +19,7 @@ export const PROGRESSION = [
 // fixed: true  = skip the weekly progression ramp (e.g. a constant warm-up)
 export const DEFAULT_PLAN = {
   name: '4-Week Foundation',
+  program: 'foundation',
   version: 3, // bump to push additive plan updates to existing devices
   createdAt: null, // set when seeded
   days: [
@@ -66,6 +67,72 @@ export const DEFAULT_PLAN = {
     },
   ],
 };
+
+// Shared warm-up used at the front of every day.
+const WARMUP = { id: 'warmup', name: 'Incline Walk (Warm-up)', type: 'cardio', sets: 1, reps: 10, rest: 0, fixed: true, note: '10 min · treadmill level 5 · 10° incline. Get the blood flowing before training.' };
+
+// ---- MARSOC-style PT program ----
+// Inspired by Marine Raider (MARSOC) Assessment & Selection prep: strength,
+// endurance/rucking, and calisthenics/grit. Scaled for a teen beginner — keep
+// loads light, form first. (Farmer's Carry logs weight held; "reps" = metres.)
+export const MARSOC_PLAN = {
+  name: 'MARSOC PT',
+  program: 'marsoc',
+  version: 1,
+  createdAt: null,
+  days: [
+    {
+      id: 'r1',
+      name: 'Day 1 · Raider Strength',
+      exercises: [
+        WARMUP,
+        { id: 'm11', name: 'Back Squat',            type: 'reps', sets: 4, reps: 8,  rest: 120, note: 'Brace the core, sit between the hips, drive up through the heels.' },
+        { id: 'm12', name: 'Pull-ups',              type: 'reps', sets: 4, reps: 6,  rest: 120, note: 'Dead hang to chin over the bar. Use a band if needed.' },
+        { id: 'm13', name: 'Standing Overhead Press',type: 'reps', sets: 3, reps: 8, rest: 90,  note: 'Squeeze glutes, press straight overhead, don’t arch the back.' },
+        { id: 'm14', name: 'Trap Bar Deadlift',     type: 'reps', sets: 3, reps: 6,  rest: 120, note: 'Flat back, push the floor away. Light and clean.' },
+        { id: 'm15', name: 'Farmer’s Carry',        type: 'reps', sets: 3, reps: 40, rest: 90,  note: 'Heavy dumbbells, tall posture. "Reps" = metres carried.' },
+        { id: 'm16', name: 'Plank',                 type: 'time', sets: 3, reps: 45, rest: 60,  note: 'Straight line, tight core, breathe.' },
+        { id: 'm17', name: 'Row Finisher',          type: 'cardio', sets: 1, reps: 10, rest: 0, note: '10 min steady row to finish.' },
+      ],
+    },
+    {
+      id: 'r2',
+      name: 'Day 2 · Raider Endurance',
+      exercises: [
+        WARMUP,
+        { id: 'm21', name: 'Run Intervals',         type: 'cardio', sets: 1, reps: 15, rest: 0, note: '15 min: 30s hard / 90s easy, repeat. Track your distance.' },
+        { id: 'm22', name: 'Weighted Ruck / Incline',type: 'cardio', sets: 1, reps: 15, rest: 0, note: '15 min incline walk with a light weighted vest or pack.' },
+        { id: 'm23', name: 'Walking Lunge',         type: 'reps', sets: 3, reps: 12, rest: 90, note: '12 each leg. Long steps, knee tracks the toe.' },
+        { id: 'm24', name: 'Box Step-ups',          type: 'reps', sets: 3, reps: 12, rest: 60, note: '12 each leg onto a knee-height box. Drive through the top foot.' },
+        { id: 'm25', name: 'Hanging Leg Raise',     type: 'reps', sets: 3, reps: 12, rest: 60, note: 'Control the legs up and down, no swinging.' },
+        { id: 'm26', name: 'Plank',                 type: 'time', sets: 3, reps: 60, rest: 60, note: 'Hold 60s. Finish strong.' },
+      ],
+    },
+    {
+      id: 'r3',
+      name: 'Day 3 · Raider Grit',
+      exercises: [
+        WARMUP,
+        { id: 'm31', name: 'Push-ups',              type: 'reps', sets: 4, reps: 15, rest: 60, note: 'Chest to fists, straight body. Drop to knees if form slips.' },
+        { id: 'm32', name: 'Pull-ups',              type: 'reps', sets: 4, reps: 6,  rest: 90, note: 'As many clean reps as you can, band-assisted if needed.' },
+        { id: 'm33', name: 'Dips',                  type: 'reps', sets: 3, reps: 10, rest: 90, note: 'Bench or bars. Lower under control, don’t shrug.' },
+        { id: 'm34', name: 'Jump Squats',           type: 'reps', sets: 3, reps: 15, rest: 60, note: 'Explode up, land soft with bent knees.' },
+        { id: 'm35', name: 'Sit-ups',               type: 'reps', sets: 3, reps: 25, rest: 45, note: 'Full range, hands to thighs. Steady pace.' },
+        { id: 'm36', name: 'Mountain Climbers',     type: 'time', sets: 3, reps: 40, rest: 45, note: '40s fast. Hips down, drive the knees.' },
+        { id: 'm37', name: 'Run Finisher',          type: 'cardio', sets: 1, reps: 12, rest: 0, note: '12 min steady run or brisk incline walk.' },
+      ],
+    },
+  ],
+};
+
+// ---- Program library ----
+export const PROGRAMS = [
+  { id: 'foundation', name: '4-Week Foundation', desc: 'Full-body 3×/week — the beginner starting point.', plan: DEFAULT_PLAN },
+  { id: 'marsoc', name: 'MARSOC PT', desc: 'Raider-style strength, endurance & grit. 3×/week, more demanding.', plan: MARSOC_PLAN },
+];
+export function programById(id) {
+  return PROGRAMS.find((p) => p.id === id) || PROGRAMS[0];
+}
 
 // Compute the target sets/reps for an exercise in a given week (1-based).
 export function targetFor(exercise, week) {

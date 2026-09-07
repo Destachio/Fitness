@@ -301,6 +301,14 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .badge-name { font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--text); }
 .badge-desc { font-size: .6rem; color: var(--muted); line-height: 1.25; }
 
+/* ---- program selector ---- */
+.program-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-2); margin-top: 10px; }
+.program-row.active { border-color: var(--line-strong); box-shadow: var(--glow); }
+.program-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.program-info strong { font-size: .95rem; }
+.program-info .muted { font-size: .76rem; line-height: 1.35; }
+.mini-load { width: auto; padding: 9px 16px; }
+
 /* ---- bottom nav ---- */
 .bottom-nav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 70;

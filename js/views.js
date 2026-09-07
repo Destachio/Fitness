@@ -598,6 +598,9 @@ export function parent() {
   set.appendChild(field('Program start date', el('input.input', { type: 'date', value: s.startDate || '', onchange: (e) => S.saveSettings({ startDate: e.target.value }) })));
   wrap.appendChild(set);
 
+  // Training program selector
+  wrap.appendChild(programCard());
+
   // Plan editor
   wrap.appendChild(planEditor());
 
@@ -618,8 +621,8 @@ export function parent() {
     el('button.btn', { onclick: importBackup }, 'Import backup'),
   ]));
   data.appendChild(el('button.btn.danger-ghost', {
-    onclick: () => { if (confirm('Reset the plan to the default 4-week program? Your logged sessions are kept.')) { S.resetPlanToDefault(); toast('Plan reset to default'); rerender(); } },
-  }, 'Reset plan to default'));
+    onclick: () => { if (confirm('Reset the current program back to its default workouts? Your logged sessions are kept.')) { S.resetPlanToDefault(); toast('Program reset to default'); rerender(); } },
+  }, 'Reset program to default'));
   data.appendChild(el('button.btn.danger-ghost', {
     onclick: () => { if (confirm('Erase ALL sessions and history? This cannot be undone.')) { S.getLogs().forEach((l) => S.deleteLog(l.id)); toast('History cleared'); } },
   }, 'Clear all session history'));
@@ -659,6 +662,33 @@ function pinSetupCard() {
 
 function field(label, control) {
   return el('label.field', {}, [el('span.field-lbl', { text: label }), control]);
+}
+
+function programCard() {
+  const active = S.activeProgramId();
+  const card = el('div.card');
+  card.appendChild(el('h3.card-title', { text: 'Training program' }));
+  card.appendChild(el('p.hint', { text: 'Pick the program. Switching replaces the workout days with that program’s template — your logged history is kept, but any custom edits to the current plan are reset.' }));
+  S.PROGRAM_LIST.forEach((p) => {
+    const isActive = p.id === active;
+    card.appendChild(el(`div.program-row${isActive ? '.active' : ''}`, {}, [
+      el('div.program-info', {}, [
+        el('strong', { text: p.name }),
+        el('span.muted', { text: p.desc }),
+      ]),
+      isActive
+        ? el('span.badge', { text: 'Active' })
+        : el('button.btn.mini-load', {
+            onclick: () => {
+              if (!confirm(`Switch to "${p.name}"? This replaces the current workout days (logged sessions are kept).`)) return;
+              S.loadProgram(p.id);
+              toast(`${p.name} loaded`);
+              rerender();
+            },
+          }, 'Load'),
+    ]));
+  });
+  return card;
 }
 
 function planEditor() {
