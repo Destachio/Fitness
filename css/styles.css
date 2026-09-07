@@ -282,23 +282,24 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .verse-text { font-size: 1.02rem; line-height: 1.5; color: var(--text); font-style: italic; }
 .verse-ref { margin-top: 10px; font-family: var(--mono); font-size: .76rem; font-weight: 700; letter-spacing: .06em; color: var(--accent); text-transform: uppercase; }
 
-/* ---- twitch reward streak ---- */
-.reward-card.unlocked { border-color: rgba(145, 71, 255, .5); box-shadow: 0 0 18px rgba(145, 71, 255, .22); }
-.reward-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
-.reward-title { margin-bottom: 0; }
-.reward-card.unlocked .reward-title::before, .reward-card.unlocked .reward-title .icon { color: #9147ff; }
-.reward-count { font-family: var(--mono); font-size: 1.05rem; font-weight: 800; color: var(--accent); }
-.reward-card.unlocked .reward-count { color: #b794ff; }
-.reward-pips { display: flex; gap: 6px; margin-bottom: 12px; }
-.pip { flex: 1; height: 8px; border-radius: 2px; background: var(--surface-2); border: 1px solid var(--line); }
-.pip.on { background: var(--accent); border-color: transparent; box-shadow: var(--glow); }
-.reward-card.unlocked .pip.on { background: linear-gradient(90deg, #9147ff, #b794ff); box-shadow: 0 0 8px rgba(145, 71, 255, .55); }
-.reward-ready { font-weight: 800; color: #b794ff; margin-bottom: 12px; letter-spacing: .02em; }
-.reward-btn { background: linear-gradient(135deg, #9147ff, #6f31cc); color: #fff; }
-.reward-btn .icon { color: #fff; }
-.reward-locked { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: .82rem; font-weight: 600; background: var(--bg-2); border: 1px dashed var(--line); border-radius: var(--radius); padding: 12px 14px; }
-.reward-locked .icon { color: var(--faint); }
-.reward-meter { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; }
+/* ---- progression badges ---- */
+.badges-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.badges-count { font-family: var(--mono); font-size: 1rem; font-weight: 800; color: var(--accent); }
+.badge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 4px; }
+.badge {
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px;
+  background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 12px 8px; opacity: .5; filter: grayscale(1); transition: transform .12s ease;
+}
+.badge.earned {
+  opacity: 1; filter: none; border-color: var(--line-strong);
+  background: linear-gradient(180deg, rgba(226, 56, 45, .06), var(--bg-2));
+  box-shadow: 0 0 12px rgba(226, 56, 45, .12);
+}
+.badge-ic { font-size: 1.5rem; line-height: 1; }
+.badge.earned .badge-ic { filter: drop-shadow(0 0 6px rgba(226, 56, 45, .4)); }
+.badge-name { font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--text); }
+.badge-desc { font-size: .6rem; color: var(--muted); line-height: 1.25; }
 
 /* ---- bottom nav ---- */
 .bottom-nav {
