@@ -700,6 +700,16 @@ function pinGate(wrap) {
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
   card.appendChild(input);
   card.appendChild(el('button.btn.primary', { onclick: submit }, 'Unlock'));
+  // Recovery for a forgotten PIN — clears the PIN only, keeps all history.
+  card.appendChild(el('button.pin-forgot', {
+    onclick: () => {
+      if (!confirm('Reset the parent PIN? This clears the PIN so you can set a new one. All workouts and history are kept.')) return;
+      S.clearPin();
+      S.unlockParent();
+      toast('PIN cleared — set a new one');
+      rerender();
+    },
+  }, 'Forgot PIN?'));
   wrap.appendChild(card);
   setTimeout(() => input.focus(), 50);
   return wrap;

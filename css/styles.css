@@ -301,6 +301,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .badge-name { font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--text); }
 .badge-desc { font-size: .6rem; color: var(--muted); line-height: 1.25; }
 
+.pin-forgot { background: none; border: none; color: var(--muted); font-size: .78rem; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; padding: 6px; margin-top: 2px; }
+.pin-forgot:active { color: var(--text); }
+
 /* ---- performance standards / radar ---- */
 .radar-card { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .radar { width: 100%; max-width: 360px; height: auto; }

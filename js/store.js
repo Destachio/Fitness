@@ -380,6 +380,10 @@ export function hasPin() {
 export function setPin(pin) {
   saveSettings({ pinHash: hashPin(String(pin)) });
 }
+// Clear the PIN (recovery for a forgotten PIN). Keeps all other data.
+export function clearPin() {
+  saveSettings({ pinHash: null });
+}
 export function checkPin(pin) {
   return getSettings().pinHash === hashPin(String(pin));
 }
