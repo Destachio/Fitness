@@ -329,6 +329,17 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .bench-unit { font-size: .68rem; color: var(--faint); text-transform: uppercase; letter-spacing: .04em; }
 .bench-goals { font-family: var(--mono); font-size: .74rem; color: var(--muted); }
 
+/* ---- blocks / rules ---- */
+.block-current { border-color: var(--line-strong); box-shadow: var(--glow); }
+.day-heading { font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: var(--accent); margin: 14px 0 6px; }
+.day-heading:first-of-type { margin-top: 6px; }
+.block-purpose { display: block; font-size: .76rem; line-height: 1.35; margin-top: 2px; }
+.week-row div { display: flex; flex-direction: column; gap: 1px; }
+.rule-list { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+.rule-list li { position: relative; padding-left: 16px; font-size: .84rem; line-height: 1.45; color: var(--muted); }
+.rule-list li::before { content: ''; position: absolute; left: 0; top: .55em; width: 5px; height: 5px; background: var(--amber); border-radius: 1px; }
+.editor-block { font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--accent); margin: 18px 0 -2px; padding-top: 10px; border-top: 1px solid var(--line); }
+
 /* ---- program selector ---- */
 .program-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-2); margin-top: 10px; }
 .program-row.active { border-color: var(--line-strong); box-shadow: var(--glow); }

@@ -1,152 +1,215 @@
-// data.js — default 4-week program + exercise notes.
-// The plan is editable by a parent; this is just the seed/default.
+// data.js — the Functional Fit Father 13-week protocol.
+// A 13-week block progression built to hit the GBRS Group performance
+// standards. Borrows MARSOC assessment-prep structure (bodyweight volume,
+// rucking, running under fatigue, grinders) scaled to what someone with a job
+// and a family can recover from. The plan is editable by a parent.
 
-export const PROGRAM_WEEKS = 4;
+export const PROGRAM_WEEKS = 13;
 
-// Progression scheme applied automatically on top of each exercise's base
-// sets/reps, so a parent only edits the base day and the 4 weeks ramp up.
-//  - addSets:  extra sets added this week
-//  - addReps:  extra reps added to the target this week
-//  - cue:      short coaching note shown for the week
+// Week-by-week cue shown on the session screen and in the Briefing.
+// Blocks: Baseline (1) · Base (2–5) · Build (6–9) · Peak (10–12) · Retest (13)
 export const PROGRESSION = [
-  { week: 1, addSets: 0, addReps: 0, cue: 'Learn the movements. Keep it light and focus on clean form.' },
-  { week: 2, addSets: 0, addReps: 0, cue: 'Same reps — add a small amount of weight if last week felt easy.' },
-  { week: 3, addSets: 0, addReps: 2, cue: 'Push the reps up. Last 2 reps should feel challenging.' },
-  { week: 4, addSets: 1, addReps: 0, cue: 'Extra set this week. Beat your earlier numbers where you can.' },
+  { week: 1,  block: 'Baseline', cue: 'Test, record, rest. No training this week — the seven numbers are the reading.' },
+  { week: 2,  block: 'Base',     cue: 'Block 1 · Base — build the tissue. Learn the movements. Show up.' },
+  { week: 3,  block: 'Base',     cue: 'Block 1 · Base — add 2.5 kg to the deadlift and bench if all reps were clean.' },
+  { week: 4,  block: 'Base',     cue: 'Block 1 · Base — same work, more weight. Pull-ups every training day.' },
+  { week: 5,  block: 'Base',     cue: 'Block 1 · Base — last base week. The grinder time should be dropping.' },
+  { week: 6,  block: 'Build',    cue: 'Block 2 · Build — add load. Move the numbers.' },
+  { week: 7,  block: 'Build',    cue: 'Block 2 · Build — heavier sets, longer carries, longer ruck.' },
+  { week: 8,  block: 'Build',    cue: 'Block 2 · Build — three consistent 800m reps beat one fast one.' },
+  { week: 9,  block: 'Build',    cue: 'Block 2 · Build — last build week. Keep form the stop signal.' },
+  { week: 10, block: 'Peak',     cue: 'Block 3 · Peak — specificity. Train the test.' },
+  { week: 11, block: 'Peak',     cue: 'Block 3 · Peak — measure every jump. Record the bodyweight bench set.' },
+  { week: 12, block: 'Peak',     cue: 'Block 3 · Peak — final week. Skip the ruck load, walk unloaded.' },
+  { week: 13, block: 'Retest',   cue: 'Retest. Same protocol as Week 1 — same order, same rest, same page.' },
 ];
 
-// type: 'reps' = weight + reps;  'time' = seconds held;  'cardio' = minutes (conditioning)
-// fixed: true  = skip the weekly progression ramp (e.g. a constant warm-up)
-export const DEFAULT_PLAN = {
-  name: '4-Week Foundation',
-  program: 'foundation',
-  version: 3, // bump to push additive plan updates to existing devices
-  createdAt: null, // set when seeded
-  days: [
-    {
-      id: 'dayA',
-      name: 'Day A · Full Body',
-      exercises: [
-        { id: 'warmup', name: 'Incline Walk (Warm-up)', type: 'cardio', sets: 1, reps: 10, rest: 0, fixed: true, note: '10 min · treadmill level 5 · 10° incline. Get the blood flowing before lifting.' },
-        { id: 'a1', name: 'Goblet Squat',          type: 'reps', sets: 3, reps: 10, rest: 90, note: 'Hold one dumbbell at your chest. Sit back, chest up, knees out.' },
-        { id: 'a2', name: 'Machine Chest Press',    type: 'reps', sets: 3, reps: 10, rest: 90, note: 'Push smoothly. Don’t slam the lockout.' },
-        { id: 'a3', name: 'Lat Pulldown',           type: 'reps', sets: 3, reps: 10, rest: 90, note: 'Pull the bar to your upper chest, squeeze your back.' },
-        { id: 'a4', name: 'Seated Cable Row',       type: 'reps', sets: 3, reps: 10, rest: 90, note: 'Squeeze shoulder blades together, don’t lean back too far.' },
-        { id: 'a5', name: 'Dumbbell Shoulder Press',type: 'reps', sets: 3, reps: 10, rest: 90, note: 'Sit tall, press overhead, control the way down.' },
-        { id: 'a6', name: 'Plank',                  type: 'time', sets: 3, reps: 30, rest: 60, note: 'Straight line from head to heels. Tight core.' },
-        { id: 'a7', name: 'Rowing Machine',         type: 'cardio', sets: 1, reps: 10, rest: 0, note: 'Steady-pace finisher — 10 min. Drive with the legs, then pull.' },
-      ],
-    },
-    {
-      id: 'dayB',
-      name: 'Day B · Full Body',
-      exercises: [
-        { id: 'warmup', name: 'Incline Walk (Warm-up)', type: 'cardio', sets: 1, reps: 10, rest: 0, fixed: true, note: '10 min · treadmill level 5 · 10° incline. Get the blood flowing before lifting.' },
-        { id: 'b1', name: 'Leg Press',                  type: 'reps', sets: 3, reps: 12, rest: 90, note: 'Feet shoulder width. Don’t lock the knees hard.' },
-        { id: 'b2', name: 'Incline Dumbbell Press',     type: 'reps', sets: 3, reps: 10, rest: 90, note: 'Slight incline. Lower under control.' },
-        { id: 'b3', name: 'Assisted Pull-up',           type: 'reps', sets: 3, reps: 8,  rest: 90, note: 'Use the assist pad. Pull chest toward the bar.' },
-        { id: 'b4', name: 'Dumbbell Romanian Deadlift', type: 'reps', sets: 3, reps: 10, rest: 90, note: 'Light weight. Hinge at the hips, slight knee bend, flat back.' },
-        { id: 'b5', name: 'Dumbbell Lateral Raise',     type: 'reps', sets: 3, reps: 12, rest: 60, note: 'Light dumbbells. Raise to shoulder height, lead with elbows.' },
-        { id: 'b6', name: 'Cable Crunch',               type: 'reps', sets: 3, reps: 12, rest: 60, note: 'Crunch with your abs, not your arms.' },
-        { id: 'b7', name: 'Incline Treadmill Walk',     type: 'cardio', sets: 1, reps: 12, rest: 0, note: '12 min, brisk pace on an incline. Hands off the rails.' },
-      ],
-    },
-    {
-      id: 'dayC',
-      name: 'Day C · Full Body',
-      exercises: [
-        { id: 'warmup', name: 'Incline Walk (Warm-up)', type: 'cardio', sets: 1, reps: 10, rest: 0, fixed: true, note: '10 min · treadmill level 5 · 10° incline. Get the blood flowing before lifting.' },
-        { id: 'c1', name: 'Dumbbell Lunge',     type: 'reps', sets: 3, reps: 10, rest: 90, note: '10 reps each leg. Step out, knee tracks over the foot.' },
-        { id: 'c2', name: 'Chest Fly (Pec Deck)',type: 'reps', sets: 3, reps: 12, rest: 60, note: 'Squeeze chest at the middle, slow on the way back.' },
-        { id: 'c3', name: 'Machine Row',        type: 'reps', sets: 3, reps: 10, rest: 90, note: 'Drive elbows back, chest against the pad.' },
-        { id: 'c4', name: 'Face Pull',          type: 'reps', sets: 3, reps: 15, rest: 60, note: 'Light. Pull the rope to your face, elbows high. Great for posture.' },
-        { id: 'c5', name: 'Dumbbell Bicep Curl',type: 'reps', sets: 3, reps: 12, rest: 60, note: 'No swinging — let the arms do the work.' },
-        { id: 'c6', name: 'Tricep Pushdown',    type: 'reps', sets: 3, reps: 12, rest: 60, note: 'Keep elbows pinned to your sides.' },
-        { id: 'c7', name: 'Bike Intervals',     type: 'cardio', sets: 1, reps: 10, rest: 0, note: '10 min: 30s hard / 90s easy, repeat. Big conditioning hit.' },
-      ],
-    },
-  ],
-};
+export const BLOCKS = [
+  { id: 'Baseline', name: 'Week 1 · Baseline',    weeks: '1',     purpose: 'Test, record, rest. No training.' },
+  { id: 'Base',     name: 'Block 1 · Base',       weeks: '2–5',   purpose: 'Build the tissue. Learn the movements. Establish the habit of showing up.' },
+  { id: 'Build',    name: 'Block 2 · Build',      weeks: '6–9',   purpose: 'Add load. Move the numbers.' },
+  { id: 'Peak',     name: 'Block 3 · Peak',       weeks: '10–12', purpose: 'Specificity. Train the test.' },
+  { id: 'Retest',   name: 'Week 13 · Retest',     weeks: '13',    purpose: 'Same protocol as Week 1. The two columns are the proof.' },
+];
 
-// Shared warm-up used at the front of every day.
-const WARMUP = { id: 'warmup', name: 'Incline Walk (Warm-up)', type: 'cardio', sets: 1, reps: 10, rest: 0, fixed: true, note: '10 min · treadmill level 5 · 10° incline. Get the blood flowing before training.' };
-
-// ---- MARSOC-style PT program ----
-// Inspired by Marine Raider (MARSOC) Assessment & Selection prep: strength,
-// endurance/rucking, and calisthenics/grit. Scaled for a teen beginner — keep
-// loads light, form first. (Farmer's Carry logs weight held; "reps" = metres.)
-export const MARSOC_PLAN = {
-  name: 'MARSOC PT',
-  program: 'marsoc',
+// type: 'reps' = weight + reps · 'time' = seconds · 'cardio' = minutes
+// weeks: which program weeks this session runs in.
+export const FFF_PLAN = {
+  name: 'Functional Fit Father',
+  program: 'fff',
   version: 1,
   createdAt: null,
   days: [
+    // ---------- Week 1 baseline / Week 13 retest ----------
     {
-      id: 'r1',
-      name: 'Day 1 · Raider Strength',
+      id: 't1', block: 'Baseline', weeks: [1, 13], name: 'Test 1 · Jump / Bench / Pull',
       exercises: [
-        WARMUP,
-        { id: 'm11', name: 'Back Squat',            type: 'reps', sets: 4, reps: 8,  rest: 120, note: 'Brace the core, sit between the hips, drive up through the heels.' },
-        { id: 'm12', name: 'Pull-ups',              type: 'reps', sets: 4, reps: 6,  rest: 120, note: 'Dead hang to chin over the bar. Use a band if needed.' },
-        { id: 'm13', name: 'Standing Overhead Press',type: 'reps', sets: 3, reps: 8, rest: 90,  note: 'Squeeze glutes, press straight overhead, don’t arch the back.' },
-        { id: 'm14', name: 'Trap Bar Deadlift',     type: 'reps', sets: 3, reps: 6,  rest: 120, note: 'Flat back, push the floor away. Light and clean.' },
-        { id: 'm15', name: 'Farmer’s Carry',        type: 'reps', sets: 3, reps: 40, rest: 90,  note: 'Heavy dumbbells, tall posture. "Reps" = metres carried.' },
-        { id: 'm16', name: 'Plank',                 type: 'time', sets: 3, reps: 45, rest: 60,  note: 'Straight line, tight core, breathe.' },
-        { id: 'm17', name: 'Row Finisher',          type: 'cardio', sets: 1, reps: 10, rest: 0, note: '10 min steady row to finish.' },
+        { id: 't1a', name: 'Broad Jump',            type: 'reps', sets: 3, reps: 1,   rest: 120, note: 'Best of 3, full rest. Measure against your own height. Record it on the Standards screen.' },
+        { id: 't1b', name: 'Bench Press @ Bodyweight', type: 'reps', sets: 1, reps: 10, rest: 0,  note: 'Bodyweight on the bar, reps to failure. Spotter or safeties. Zero is a reading — record it on Standards.' },
+        { id: 't1c', name: 'Pull-ups (max)',        type: 'reps', sets: 1, reps: 10,  rest: 0,   note: 'One set. Strict, dead hang to chin over the bar. Record it on Standards.' },
       ],
     },
     {
-      id: 'r2',
-      name: 'Day 2 · Raider Endurance',
+      id: 't2', block: 'Baseline', weeks: [1, 13], name: 'Test 2 · Deadlift / Plank',
       exercises: [
-        WARMUP,
-        { id: 'm21', name: 'Run Intervals',         type: 'cardio', sets: 1, reps: 15, rest: 0, note: '15 min: 30s hard / 90s easy, repeat. Track your distance.' },
-        { id: 'm22', name: 'Weighted Ruck / Incline',type: 'cardio', sets: 1, reps: 15, rest: 0, note: '15 min incline walk with a light weighted vest or pack.' },
-        { id: 'm23', name: 'Walking Lunge',         type: 'reps', sets: 3, reps: 12, rest: 90, note: '12 each leg. Long steps, knee tracks the toe.' },
-        { id: 'm24', name: 'Box Step-ups',          type: 'reps', sets: 3, reps: 12, rest: 60, note: '12 each leg onto a knee-height box. Drive through the top foot.' },
-        { id: 'm25', name: 'Hanging Leg Raise',     type: 'reps', sets: 3, reps: 12, rest: 60, note: 'Control the legs up and down, no swinging.' },
-        { id: 'm26', name: 'Plank',                 type: 'time', sets: 3, reps: 60, rest: 60, note: 'Hold 60s. Finish strong.' },
+        { id: 't2a', name: 'Trap Bar Deadlift (heavy 5)', type: 'reps', sets: 1, reps: 5,   rest: 0, note: 'Work up to a heavy 5 with good form. Stop when form breaks, not when it gets hard. Record weight ÷ bodyweight on Standards.' },
+        { id: 't2b', name: 'Plank (to failure)',    type: 'time', sets: 1, reps: 120, rest: 0, note: 'Hold to failure and time it. Record it on Standards.' },
       ],
     },
     {
-      id: 'r3',
-      name: 'Day 3 · Raider Grit',
+      id: 't3', block: 'Baseline', weeks: [1, 13], name: 'Test 3 · Carry / 800m',
       exercises: [
-        WARMUP,
-        { id: 'm31', name: 'Push-ups',              type: 'reps', sets: 4, reps: 15, rest: 60, note: 'Chest to fists, straight body. Drop to knees if form slips.' },
-        { id: 'm32', name: 'Pull-ups',              type: 'reps', sets: 4, reps: 6,  rest: 90, note: 'As many clean reps as you can, band-assisted if needed.' },
-        { id: 'm33', name: 'Dips',                  type: 'reps', sets: 3, reps: 10, rest: 90, note: 'Bench or bars. Lower under control, don’t shrug.' },
-        { id: 'm34', name: 'Jump Squats',           type: 'reps', sets: 3, reps: 15, rest: 60, note: 'Explode up, land soft with bent knees.' },
-        { id: 'm35', name: 'Sit-ups',               type: 'reps', sets: 3, reps: 25, rest: 45, note: 'Full range, hands to thighs. Steady pace.' },
-        { id: 'm36', name: 'Mountain Climbers',     type: 'time', sets: 3, reps: 40, rest: 45, note: '40s fast. Hips down, drive the knees.' },
-        { id: 'm37', name: 'Run Finisher',          type: 'cardio', sets: 1, reps: 12, rest: 0, note: '12 min steady run or brisk incline walk.' },
+        { id: 't3a', name: "Farmer's Carry (max distance)", type: 'reps', sets: 1, reps: 175, rest: 0, note: 'Two handles totalling your bodyweight. Walk until you set them down. Reps = feet carried. Record on Standards.' },
+        { id: 't3b', name: '800m Run',              type: 'time', sets: 1, reps: 195, rest: 0, note: 'Rest fully first, then full effort on a track or measured route. Record on Standards.' },
+      ],
+    },
+
+    // ---------- Block 1: Base (weeks 2–5) ----------
+    {
+      id: 'b1mon', block: 'Base', weeks: [2, 3, 4, 5], name: 'Mon · Lower + Jump',
+      exercises: [
+        { id: 'b1m1', name: 'Broad Jump',           type: 'reps', sets: 3, reps: 3,  rest: 120, note: 'Full rest between sets. Stick the landing. Stop the moment you get slower — jumps are practice, not conditioning.' },
+        { id: 'b1m2', name: 'Trap Bar Deadlift',    type: 'reps', sets: 5, reps: 5,  rest: 150, note: '70–75% of your Week 1 heavy 5. Add 2.5 kg per week if all reps are clean.' },
+        { id: 'b1m3', name: 'Bulgarian Split Squat',type: 'reps', sets: 3, reps: 8,  rest: 90,  note: '8 per leg. Bodyweight or light dumbbells.' },
+        { id: 'b1m4', name: 'Hardstyle Plank',      type: 'time', sets: 5, reps: 20, rest: 45,  note: 'Squeeze everything — fists, quads, glutes, abs. Not a passive hold.' },
+        { id: 'b1m5', name: 'Pull-ups',             type: 'reps', sets: 3, reps: 6,  rest: 120, note: 'Stop 2 reps short of failure. Never to failure except on test day.' },
+      ],
+    },
+    {
+      id: 'b1tue', block: 'Base', weeks: [2, 3, 4, 5], name: 'Tue · Upper + Carry',
+      exercises: [
+        { id: 'b1t1', name: 'Bench Press',          type: 'reps', sets: 5, reps: 5,  rest: 150, note: '70–75% of bodyweight. Add 2.5 kg per week.' },
+        { id: 'b1t2', name: 'Pull-ups',             type: 'reps', sets: 5, reps: 6,  rest: 120, note: 'Stop 2 short of failure. Under 5 reps? Use a band or negatives (3–5 second lower).' },
+        { id: 'b1t3', name: 'Dumbbell Row',         type: 'reps', sets: 3, reps: 10, rest: 90,  note: '10 per side. Heavy.' },
+        { id: 'b1t4', name: "Farmer's Carry",       type: 'reps', sets: 4, reps: 20, rest: 90,  note: '4 trips of 20 m at 60% bodyweight total. Reps = metres per trip. Chalk allowed, straps are not.' },
+        { id: 'b1t5', name: 'Push-ups',             type: 'reps', sets: 3, reps: 12, rest: 60,  note: 'Stop 2 short of failure.' },
+      ],
+    },
+    {
+      id: 'b1thu', block: 'Base', weeks: [2, 3, 4, 5], name: 'Thu · Run + Grinder',
+      exercises: [
+        { id: 'b1h1', name: 'Warm-up Jog',          type: 'cardio', sets: 1, reps: 10, rest: 0,  note: '10 minutes easy.' },
+        { id: 'b1h2', name: '400m Repeats',         type: 'time', sets: 4, reps: 100, rest: 120, note: '4 × 400m at a pace you can hold for all four. Rest 2 min. Target ≈ half your Week 1 800m time + 5s. Log each rep in seconds.' },
+        { id: 'b1h3', name: 'Grinder (3 rounds)',   type: 'time', sets: 1, reps: 900, rest: 0,   note: '3 rounds for time, no rest between movements: 10 pull-ups (or max under 10) · 20 push-ups · 30 air squats · 40 flutter kicks · 10 burpees. Log total seconds — it should drop every week.' },
+      ],
+    },
+    {
+      id: 'b1sat', block: 'Base', weeks: [2, 3, 4, 5], name: 'Sat · Full Body + Ruck',
+      exercises: [
+        { id: 'b1s1', name: 'Kettlebell Swings',    type: 'reps', sets: 5, reps: 15, rest: 60, note: 'Hips, not arms. Snap to the top.' },
+        { id: 'b1s2', name: 'Goblet Squat',         type: 'reps', sets: 3, reps: 10, rest: 60, note: 'Chest up, sit between the hips.' },
+        { id: 'b1s3', name: 'Pull-ups',             type: 'reps', sets: 3, reps: 5,  rest: 90, note: '3 easy sets. Volume wins here.' },
+        { id: 'b1s4', name: 'Plank',                type: 'time', sets: 3, reps: 30, rest: 45, note: 'Straight line, tight core.' },
+        { id: 'b1s5', name: 'Ruck',                 type: 'cardio', sets: 1, reps: 45, rest: 0, note: '45 minutes with 10 kg. Brisk walk. Do not run with a pack.' },
+      ],
+    },
+
+    // ---------- Block 2: Build (weeks 6–9) ----------
+    {
+      id: 'b2mon', block: 'Build', weeks: [6, 7, 8, 9], name: 'Mon · Lower + Jump',
+      exercises: [
+        { id: 'b2m1', name: 'Broad Jump',           type: 'reps', sets: 4, reps: 3,  rest: 120, note: 'Add a 5 kg weight vest for the first 2 sets, then take it off — you will feel faster.' },
+        { id: 'b2m2', name: 'Trap Bar Deadlift',    type: 'reps', sets: 4, reps: 4,  rest: 180, note: '80–85%. Then one extra set of 5 at 75%.' },
+        { id: 'b2m3', name: 'Rear-Foot-Elevated Split Squat', type: 'reps', sets: 3, reps: 6, rest: 90, note: '6 per leg. Loaded.' },
+        { id: 'b2m4', name: 'Hardstyle Plank',      type: 'time', sets: 4, reps: 40, rest: 45,  note: 'Full-body tension for the whole 40 seconds.' },
+        { id: 'b2m5', name: 'Pull-ups',             type: 'reps', sets: 3, reps: 8,  rest: 120, note: 'Add weight if you exceed 10 clean reps.' },
+      ],
+    },
+    {
+      id: 'b2tue', block: 'Build', weeks: [6, 7, 8, 9], name: 'Tue · Upper + Carry',
+      exercises: [
+        { id: 'b2t1', name: 'Bench Press',          type: 'reps', sets: 4, reps: 4,  rest: 180, note: '80–85% bodyweight. Then one set of 8 at 70% — the 8-rep set is building your standard.' },
+        { id: 'b2t2', name: 'Pull-ups',             type: 'reps', sets: 6, reps: 6,  rest: 120, note: '6 sets. Stop 1 short of failure.' },
+        { id: 'b2t3', name: 'Barbell Row',          type: 'reps', sets: 4, reps: 6,  rest: 90,  note: 'Barbell or heavy dumbbell.' },
+        { id: 'b2t4', name: "Farmer's Carry",       type: 'reps', sets: 5, reps: 25, rest: 90,  note: '5 trips of 25 m at 80% bodyweight total. Reps = metres per trip.' },
+        { id: 'b2t5', name: 'Dips',                 type: 'reps', sets: 3, reps: 10, rest: 90,  note: 'Dips or close-grip push-ups, 8–12 reps.' },
+      ],
+    },
+    {
+      id: 'b2thu', block: 'Build', weeks: [6, 7, 8, 9], name: 'Thu · Run + Grinder',
+      exercises: [
+        { id: 'b2h1', name: 'Warm-up Jog',          type: 'cardio', sets: 1, reps: 10, rest: 0,  note: '10 minutes easy.' },
+        { id: 'b2h2', name: '800m Repeats',         type: 'time', sets: 3, reps: 205, rest: 180, note: '3 × 800m, rest 3 min. Each rep at your Week 1 time + 10s. The goal is three consistent reps, not one fast one.' },
+        { id: 'b2h3', name: 'Grinder (4 rounds)',   type: 'time', sets: 1, reps: 1200, rest: 0,  note: '4 rounds, same movements: 10 pull-ups · 20 push-ups · 30 air squats · 40 flutter kicks · 10 burpees. Add 10 kg in a backpack for the air squats.' },
+      ],
+    },
+    {
+      id: 'b2sat', block: 'Build', weeks: [6, 7, 8, 9], name: 'Sat · Full Body + Ruck',
+      exercises: [
+        { id: 'b2s1', name: 'Kettlebell Swings',    type: 'reps', sets: 5, reps: 20, rest: 60, note: 'Hips, not arms.' },
+        { id: 'b2s2', name: 'Sandbag Bear-Hug Carry', type: 'reps', sets: 4, reps: 30, rest: 90, note: '4 × 30 m, bear hug. Reps = metres per trip.' },
+        { id: 'b2s3', name: 'Pull-ups',             type: 'reps', sets: 3, reps: 6,  rest: 90, note: '3 sets.' },
+        { id: 'b2s4', name: 'Hollow Body Hold',     type: 'time', sets: 3, reps: 30, rest: 45, note: 'Lower back pinned to the floor.' },
+        { id: 'b2s5', name: 'Ruck',                 type: 'cardio', sets: 1, reps: 60, rest: 0, note: '60 minutes with 15 kg. Brisk walk.' },
+      ],
+    },
+
+    // ---------- Block 3: Peak (weeks 10–12) ----------
+    {
+      id: 'b3mon', block: 'Peak', weeks: [10, 11, 12], name: 'Mon · Lower + Jump',
+      exercises: [
+        { id: 'b3m1', name: 'Broad Jump',           type: 'reps', sets: 5, reps: 2,  rest: 120, note: 'Measure every jump. Put tape on the floor.' },
+        { id: 'b3m2', name: 'Trap Bar Deadlift',    type: 'reps', sets: 3, reps: 3,  rest: 180, note: '85–90%. Then 1 × 5 at the weight you intend to hit at retest (1.5× bodyweight, or your target).' },
+        { id: 'b3m3', name: 'Hardstyle Plank',      type: 'time', sets: 3, reps: 60, rest: 60,  note: '60 seconds of full tension.' },
+        { id: 'b3m4', name: 'Pull-ups',             type: 'reps', sets: 2, reps: 4,  rest: 150, note: '2 sets, weighted, low reps.' },
+      ],
+    },
+    {
+      id: 'b3tue', block: 'Peak', weeks: [10, 11, 12], name: 'Tue · Upper + Carry',
+      exercises: [
+        { id: 'b3t1', name: 'Bench Press',          type: 'reps', sets: 3, reps: 3,  rest: 180, note: '90% bodyweight. Then 1 set at bodyweight for as many clean reps as possible — record it.' },
+        { id: 'b3t2', name: 'Pull-ups',             type: 'reps', sets: 5, reps: 5,  rest: 120, note: '1 max set, then 4 sets at half that number.' },
+        { id: 'b3t3', name: "Farmer's Carry",       type: 'reps', sets: 3, reps: 30, rest: 120, note: '3 trips at 100% bodyweight total. Measure distance on the third trip. Reps = metres.' },
+        { id: 'b3t4', name: 'Rows',                 type: 'reps', sets: 3, reps: 8,  rest: 90,  note: 'Barbell or dumbbell.' },
+      ],
+    },
+    {
+      id: 'b3thu', block: 'Peak', weeks: [10, 11, 12], name: 'Thu · Run + Grinder',
+      exercises: [
+        { id: 'b3h1', name: 'Warm-up Jog',          type: 'cardio', sets: 1, reps: 10, rest: 0,  note: '10 minutes easy.' },
+        { id: 'b3h2', name: '800m at Target Pace',  type: 'time', sets: 2, reps: 195, rest: 300, note: '2 × 800m at target pace (3:15 or your goal). Rest 5 min. If you hit both, you are ready.' },
+        { id: 'b3h3', name: 'Grinder (2 rounds)',   type: 'time', sets: 1, reps: 600, rest: 0,   note: '2 rounds only. Fast.' },
+      ],
+    },
+    {
+      id: 'b3sat', block: 'Peak', weeks: [10, 11, 12], name: 'Sat · Full Body + Ruck',
+      exercises: [
+        { id: 'b3s1', name: 'Kettlebell Swings',    type: 'reps', sets: 3, reps: 15, rest: 60, note: 'Crisp and light.' },
+        { id: 'b3s2', name: 'Light Full Body Circuit', type: 'cardio', sets: 1, reps: 20, rest: 0, note: '20 minutes, easy pace. Nothing heavy.' },
+        { id: 'b3s3', name: 'Ruck',                 type: 'cardio', sets: 1, reps: 45, rest: 0, note: '45 minutes with 15 kg. Week 12: skip the load and walk unloaded.' },
       ],
     },
   ],
 };
 
+// Recovery days and the standing rules, shown in the Briefing.
+export const PROGRAM_RULES = [
+  'Pull-ups every training day. Even Thursday. Volume wins here.',
+  'Wed / Fri / Sun: walk, stretch, sleep. Recovery is a session.',
+  'Sleep is a training variable. Under 6 hours, cut the session to the first two exercises and go home.',
+  'Nothing gets added to the program. If you want to add, remove something first.',
+  'Missed session: skip it. Do not double up. Four good sessions beat five bad ones.',
+  'Pain in a joint: stop the movement, keep the session. Pain in a muscle: keep going.',
+  'The only progress metric is the retest page. Not the mirror.',
+];
+
+export const DEFAULT_PLAN = FFF_PLAN;
+
 // ---- Program library ----
 export const PROGRAMS = [
-  { id: 'foundation', name: '4-Week Foundation', desc: 'Full-body 3×/week — the beginner starting point.', plan: DEFAULT_PLAN },
-  { id: 'marsoc', name: 'MARSOC PT', desc: 'Raider-style strength, endurance & grit. 3×/week, more demanding.', plan: MARSOC_PLAN },
+  { id: 'fff', name: 'Functional Fit Father', desc: '13-week protocol to hit the GBRS Group performance standards.', plan: FFF_PLAN },
 ];
 export function programById(id) {
   return PROGRAMS.find((p) => p.id === id) || PROGRAMS[0];
 }
 
-// Compute the target sets/reps for an exercise in a given week (1-based).
-export function targetFor(exercise, week) {
-  const prog = PROGRESSION.find((p) => p.week === week) || PROGRESSION[0];
-  if (exercise.fixed) {
-    // Fixed work (e.g. the warm-up) never ramps — same every week.
-    return { sets: exercise.sets, reps: exercise.reps };
-  }
-  if (exercise.type === 'cardio') {
-    // Cardio stays a single bout but its duration ramps up over the weeks.
-    return { sets: exercise.sets, reps: exercise.reps + prog.addReps };
-  }
-  return {
-    sets: exercise.sets + prog.addSets,
-    reps: exercise.reps + prog.addReps,
-  };
+// Which sessions run in a given program week.
+export function daysForWeek(plan, week) {
+  return (plan.days || []).filter((d) => !d.weeks || d.weeks.includes(week));
+}
+
+// Targets are written explicitly per block, so there is no automatic ramp —
+// load progression lives in each exercise's note ("add 2.5 kg per week").
+export function targetFor(exercise) {
+  return { sets: exercise.sets, reps: exercise.reps };
 }

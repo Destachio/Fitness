@@ -1,5 +1,5 @@
 // store.js — all persistence (localStorage) + app state + actions.
-import { DEFAULT_PLAN, PROGRAM_WEEKS, targetFor, PROGRAMS, programById } from './data.js';
+import { DEFAULT_PLAN, PROGRAM_WEEKS, targetFor, PROGRAMS, programById, daysForWeek } from './data.js';
 
 const KEYS = {
   plan: 'fit.plan.v1',
@@ -29,7 +29,7 @@ const DEFAULT_SETTINGS = {
   pinHash: null,          // parent PIN (lightweight child-lock, not real security)
   weightUnit: 'kg',
   waterGoal: 8,           // glasses per day (~250 ml each)
-  activeProgram: 'foundation',
+  activeProgram: 'fff',
 };
 
 export function getSettings() {
@@ -42,7 +42,7 @@ export function saveSettings(patch) {
 }
 
 // ---- Plan / programs ----
-export function activeProgramId() { return getSettings().activeProgram || 'foundation'; }
+export function activeProgramId() { return getSettings().activeProgram || 'fff'; }
 export const PROGRAM_LIST = PROGRAMS.map((p) => ({ id: p.id, name: p.name, desc: p.desc }));
 
 function seedPlan(programId) {
@@ -71,26 +71,17 @@ export function loadProgram(programId) {
   return seedPlan(programId);
 }
 
-// Additively bring a Foundation plan up to the current default version — drop
-// in any new default exercises (warm-up, cardio finishers) at their proper
-// position — without wiping the user's edits. Only applies to Foundation.
+// Bring a stored plan up to date. Plans from a superseded program (the old
+// Foundation / MARSOC templates) are replaced with the current program — the
+// structure changed completely, so a merge is not meaningful. Logged sessions,
+// standards, badges and every other record are untouched.
 function migratePlan(plan) {
-  const prog = plan.program || 'foundation';
-  if (prog !== 'foundation') return plan;
-  if (plan.version === DEFAULT_PLAN.version) return plan;
-  for (const defDay of DEFAULT_PLAN.days) {
-    const day = plan.days.find((d) => d.id === defDay.id);
-    if (!day) continue;
-    defDay.exercises.forEach((defEx, defIdx) => {
-      if (day.exercises.some((e) => e.id === defEx.id)) return;
-      const at = Math.min(defIdx, day.exercises.length);
-      day.exercises.splice(at, 0, structuredClone(defEx));
-    });
-  }
-  plan.version = DEFAULT_PLAN.version;
-  plan.program = 'foundation';
-  write(KEYS.plan, plan);
-  return plan;
+  if (plan.program === DEFAULT_PLAN.program && plan.version === DEFAULT_PLAN.version) return plan;
+  const fresh = structuredClone(DEFAULT_PLAN);
+  fresh.createdAt = plan.createdAt || new Date().toISOString();
+  write(KEYS.plan, fresh);
+  saveSettings({ activeProgram: DEFAULT_PLAN.program });
+  return fresh;
 }
 export function savePlan(plan) {
   write(KEYS.plan, plan);
@@ -136,6 +127,7 @@ export function newSession(dayId, week) {
     week,
     dayId,
     dayName: day.name,
+    block: day.block || '',
     completed: false,
     notes: '',
     entries: day.exercises.map((ex) => {
@@ -155,18 +147,32 @@ export function newSession(dayId, week) {
 }
 
 // ---- Program scheduling / progress ----
-// The default schedule is 3 sessions/week (A, B, C) across 4 weeks = 12 sessions.
-export const SESSIONS_PER_WEEK = 3;
-export const TOTAL_SESSIONS = PROGRAM_WEEKS * SESSIONS_PER_WEEK;
+// Sessions per week varies by block (e.g. 3 test days in week 1, 4 training
+// days in weeks 2–12), so the schedule is derived from each day's week list.
 
-// Ordered list of {week, dayId} for the whole program.
+// The sessions scheduled in a given program week.
+export function daysInWeek(week) {
+  return daysForWeek(getPlan(), week);
+}
+export function sessionsPerWeek(week) {
+  return daysInWeek(week).length;
+}
+
+// Ordered list of {week, dayId, dayName, block} for the whole program.
 export function programSchedule() {
   const plan = getPlan();
   const order = [];
   for (let w = 1; w <= PROGRAM_WEEKS; w++) {
-    for (const day of plan.days) order.push({ week: w, dayId: day.id, dayName: day.name });
+    for (const day of daysForWeek(plan, w)) {
+      order.push({ week: w, dayId: day.id, dayName: day.name, block: day.block });
+    }
   }
   return order;
+}
+
+// Total sessions across the whole program.
+export function totalSessions() {
+  return programSchedule().length;
 }
 
 // How many planned sessions are completed.
@@ -180,6 +186,14 @@ export function nextScheduled() {
   const done = completedCount();
   if (done >= schedule.length) return null; // program finished
   return schedule[done];
+}
+
+// Which program week the athlete is currently on (from schedule position).
+export function currentWeek() {
+  const schedule = programSchedule();
+  const done = completedCount();
+  if (!schedule.length) return 1;
+  return (schedule[done] || schedule[schedule.length - 1]).week;
 }
 
 // ---- Stats for dashboard ----

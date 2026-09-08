@@ -2,7 +2,7 @@
 import * as S from './store.js';
 import { progressRing, lineChart, barChart, radarChart } from './charts.js';
 import { el, clear, icon, toast, fmtDate } from './ui.js';
-import { PROGRESSION, PROGRAM_WEEKS, targetFor } from './data.js';
+import { PROGRESSION, PROGRAM_WEEKS, targetFor, BLOCKS, PROGRAM_RULES } from './data.js';
 import { verseForDate } from './verses.js';
 import { allBadges, earnedBadges, earnedBadgeIdSet, badgeCounts } from './badges.js';
 import { METRICS, TIER_LABELS, scoreOf, tierName, parseValue, fmtValue } from './standards.js';
@@ -29,26 +29,25 @@ export function dashboard() {
   const s = S.getSettings();
   const logs = S.getLogs().filter((l) => l.completed);
   const done = S.completedCount();
-  const total = S.TOTAL_SESSIONS;
+  const total = S.totalSessions();
+  const wk = S.currentWeek();
+  const block = PROGRESSION.find((p) => p.week === wk);
 
-  wrap.appendChild(header(`Operative // ${s.athleteName}`, done >= total ? 'Mission accomplished — outstanding work.' : 'Gear up. Let’s execute today’s mission.'));
+  wrap.appendChild(header(`Operative // ${s.athleteName}`, done >= total ? 'Protocol complete — write the second column.' : 'Gear up. Let’s execute today’s mission.'));
 
   // Progress ring + quick stats
   const top = el('div.dash-top');
   top.appendChild(el('div.ring-card', {}, [
     progressRing(done, total, { label: `${done}/${total}`, sub: 'ops' }),
-    el('div.ring-cap', { text: 'Mission progress' }),
+    el('div.ring-cap', { text: 'Protocol progress' }),
   ]));
 
-  const thisWeek = (() => {
-    const wk = currentWeek();
-    return logs.filter((l) => l.week === wk).length;
-  })();
+  const thisWeek = logs.filter((l) => l.week === wk).length;
   const stats = el('div.stat-grid', {}, [
     statCard(S.trainingStreak(), 'streak', true),
-    statCard(`${thisWeek}/${S.SESSIONS_PER_WEEK}`, 'this week'),
+    statCard(`${thisWeek}/${S.sessionsPerWeek(wk)}`, 'this week'),
     statCard(totalVolume(logs).toLocaleString(), `${s.weightUnit} lifted`),
-    statCard(`W${currentWeek()}`, 'of ' + PROGRAM_WEEKS),
+    statCard(`W${wk}`, `${block ? block.block : ''} · of ${PROGRAM_WEEKS}`),
   ]);
   top.appendChild(stats);
   wrap.appendChild(top);
@@ -60,15 +59,15 @@ export function dashboard() {
       icon('dumbbell'),
       el('span', {}, [
         el('strong', { text: `Deploy · ${next.dayName.split('·')[0].trim()}` }),
-        el('em', { text: `Week ${next.week} · ${next.dayName.split('·')[1]?.trim() || ''}` }),
+        el('em', { text: `Week ${next.week} · ${next.dayName.split('·').slice(1).join('·').trim() || next.block || ''}` }),
       ]),
     ]));
   } else {
     wrap.appendChild(el('div.card.done-card', {}, [
       icon('trophy'),
       el('div', {}, [
-        el('strong', { text: 'Mission complete — 4 weeks down!' }),
-        el('p.sub', { text: 'Redeploy from the Briefing tab, or build a custom op in Command.' }),
+        el('strong', { text: '13 weeks complete — protocol finished!' }),
+        el('p.sub', { text: 'Write the Week 13 numbers next to the Week 1 numbers on the Standards screen. That page is the proof.' }),
       ]),
     ]));
   }
@@ -304,24 +303,23 @@ function verseCard(dateIso) {
 function totalVolume(logs) {
   return logs.reduce((sum, l) => sum + S.sessionVolume(l), 0);
 }
-function currentWeek() {
-  const done = S.completedCount();
-  return Math.min(PROGRAM_WEEKS, Math.floor(done / S.SESSIONS_PER_WEEK) + 1);
-}
+const currentWeek = () => S.currentWeek();
 
 // ---------------- TODAY ----------------
 export function today() {
   const wrap = el('div.screen');
-  wrap.appendChild(header('Today’s mission', 'Select an op and start logging.'));
+  const wk = S.currentWeek();
+  const block = PROGRESSION.find((p) => p.week === wk);
+  wrap.appendChild(header('Today’s mission', `Week ${wk} of ${PROGRAM_WEEKS}${block ? ' · ' + block.block : ''}`));
   const next = S.nextScheduled();
-  const plan = S.getPlan();
-  const wk = currentWeek();
 
+  if (block) wrap.appendChild(el('div.cue', {}, [icon('flame', { size: 16 }), el('span', { text: block.cue })]));
   if (next) {
     wrap.appendChild(el('p.hint', { text: `Up next: Week ${next.week} · ${next.dayName}` }));
   }
 
-  plan.days.forEach((day) => {
+  // Only the sessions scheduled for the current week.
+  S.daysInWeek(wk).forEach((day) => {
     const isNext = next && next.dayId === day.id && next.week === wk;
     const card = el(`div.day-card${isNext ? '.next' : ''}`);
     card.appendChild(el('div.day-card-head', {}, [
@@ -345,8 +343,8 @@ export function today() {
   return wrap;
 }
 
-function targetLabel(ex, week) {
-  const { sets, reps } = targetFor(ex, week);
+function targetLabel(ex) {
+  const { sets, reps } = targetFor(ex);
   if (ex.type === 'cardio') return `${reps} min`;
   return ex.type === 'time' ? `${sets} × ${reps}s` : `${sets} × ${reps}`;
 }
@@ -373,7 +371,7 @@ export function session(id) {
     el('button.icon-btn', { onclick: () => go('#/'), 'aria-label': 'Back' }, icon('back')),
     el('div', {}, [
       el('h1', { text: log.dayName }),
-      el('p.sub', { text: `Week ${log.week} of ${PROGRAM_WEEKS} · ${fmtDate(log.date)}` }),
+      el('p.sub', { text: `Week ${log.week} of ${PROGRAM_WEEKS}${prog ? ' · ' + prog.block : ''} · ${fmtDate(log.date)}` }),
     ]),
   ]));
   if (prog) wrap.appendChild(el('div.cue', {}, [icon('flame', { size: 16 }), el('span', { text: prog.cue })]));
@@ -542,34 +540,52 @@ function startRest(sec, btn) {
 export function plan() {
   const wrap = el('div.screen');
   const p = S.getPlan();
-  wrap.appendChild(header(p.name, '3 days/week · 4-week progressive plan'));
+  const curWeek = S.currentWeek();
+  wrap.appendChild(header(p.name, `${PROGRAM_WEEKS}-week protocol · 4 sessions/week · hit the standards`));
 
-  // progression legend
-  const leg = el('div.card', {}, [el('h3.card-title', { text: 'How the 4 weeks ramp up' })]);
-  PROGRESSION.forEach((pr) => {
+  // Block overview
+  const leg = el('div.card', {}, [el('h3.card-title', { text: 'The 13 weeks' })]);
+  BLOCKS.forEach((b) => {
     leg.appendChild(el('div.week-row', {}, [
-      el('span.week-tag', { text: 'Week ' + pr.week }),
-      el('span', { text: pr.cue }),
+      el('span.week-tag', { text: `Wk ${b.weeks}` }),
+      el('div', {}, [el('strong', { text: b.name }), el('span.muted.block-purpose', { text: b.purpose })]),
     ]));
   });
   wrap.appendChild(leg);
 
-  p.days.forEach((day) => {
-    const card = el('div.card');
-    card.appendChild(el('h3.card-title', { text: day.name }));
-    const ul = el('ul.plan-ex');
-    day.exercises.forEach((ex) => {
-      ul.appendChild(el('li', {}, [
-        el('div', {}, [
-          el('strong', { text: ex.name }),
-          el('span.muted', { text: ex.note }),
-        ]),
-        el('span.reps', { text: ex.type === 'cardio' ? `${ex.reps} min` : ex.type === 'time' ? `${ex.sets}×${ex.reps}s` : `${ex.sets}×${ex.reps}` }),
-      ]));
+  // Sessions grouped by block
+  BLOCKS.forEach((b) => {
+    const days = p.days.filter((d) => d.block === b.id);
+    if (!days.length) return;
+    const isCurrent = days.some((d) => (d.weeks || []).includes(curWeek));
+    const card = el(`div.card${isCurrent ? '.block-current' : ''}`);
+    card.appendChild(el('div.badges-head', {}, [
+      el('h3.card-title', { text: b.name }),
+      isCurrent ? el('span.badge', { text: 'Current' }) : null,
+    ]));
+    days.forEach((day) => {
+      card.appendChild(el('h4.day-heading', { text: day.name }));
+      const ul = el('ul.plan-ex');
+      day.exercises.forEach((ex) => {
+        ul.appendChild(el('li', {}, [
+          el('div', {}, [
+            el('strong', { text: ex.name }),
+            el('span.muted', { text: ex.note }),
+          ]),
+          el('span.reps', { text: ex.type === 'cardio' ? `${ex.reps} min` : ex.type === 'time' ? `${ex.sets}×${ex.reps}s` : `${ex.sets}×${ex.reps}` }),
+        ]));
+      });
+      card.appendChild(ul);
     });
-    card.appendChild(ul);
     wrap.appendChild(card);
   });
+
+  // Standing rules
+  const rules = el('div.card', {}, [el('h3.card-title', { text: 'Rules' })]);
+  const rl = el('ul.rule-list');
+  PROGRAM_RULES.forEach((r) => rl.appendChild(el('li', { text: r })));
+  rules.appendChild(rl);
+  wrap.appendChild(rules);
 
   wrap.appendChild(el('button.btn', { onclick: () => go('#/parent') }, [icon('gear', { size: 18 }), el('span', { text: 'Edit plan (parent)' })]));
   return wrap;
@@ -655,9 +671,6 @@ export function parent() {
   set.appendChild(field('Program start date', el('input.input', { type: 'date', value: s.startDate || '', onchange: (e) => S.saveSettings({ startDate: e.target.value }) })));
   wrap.appendChild(set);
 
-  // Training program selector
-  wrap.appendChild(programCard());
-
   // Plan editor
   wrap.appendChild(planEditor());
 
@@ -731,43 +744,22 @@ function field(label, control) {
   return el('label.field', {}, [el('span.field-lbl', { text: label }), control]);
 }
 
-function programCard() {
-  const active = S.activeProgramId();
-  const card = el('div.card');
-  card.appendChild(el('h3.card-title', { text: 'Training program' }));
-  card.appendChild(el('p.hint', { text: 'Pick the program. Switching replaces the workout days with that program’s template — your logged history is kept, but any custom edits to the current plan are reset.' }));
-  S.PROGRAM_LIST.forEach((p) => {
-    const isActive = p.id === active;
-    card.appendChild(el(`div.program-row${isActive ? '.active' : ''}`, {}, [
-      el('div.program-info', {}, [
-        el('strong', { text: p.name }),
-        el('span.muted', { text: p.desc }),
-      ]),
-      isActive
-        ? el('span.badge', { text: 'Active' })
-        : el('button.btn.mini-load', {
-            onclick: () => {
-              if (!confirm(`Switch to "${p.name}"? This replaces the current workout days (logged sessions are kept).`)) return;
-              S.loadProgram(p.id);
-              toast(`${p.name} loaded`);
-              rerender();
-            },
-          }, 'Load'),
-    ]));
-  });
-  return card;
-}
-
 function planEditor() {
   const card = el('div.card.editor');
   card.appendChild(el('h3.card-title', { text: 'Workout editor' }));
-  card.appendChild(el('p.hint', { text: 'Edit exercises, sets & reps. The 4-week ramp applies automatically on top of these base numbers.' }));
+  card.appendChild(el('p.hint', { text: 'Edit sessions, sets & reps. Targets are written per block — load progression lives in each exercise’s note.' }));
   const p = S.getPlan();
 
   const planNameInput = el('input.input', { value: p.name, onchange: (e) => { p.name = e.target.value; S.savePlan(p); } });
-  card.appendChild(field('Plan name', planNameInput));
+  card.appendChild(field('Program name', planNameInput));
 
+  let lastBlock = null;
   p.days.forEach((day) => {
+    if (day.block && day.block !== lastBlock) {
+      lastBlock = day.block;
+      const b = BLOCKS.find((x) => x.id === day.block);
+      card.appendChild(el('div.editor-block', { text: b ? `${b.name} · weeks ${b.weeks}` : day.block }));
+    }
     const box = el('div.editor-day');
     box.appendChild(el('input.input.day-name', { value: day.name, onchange: (e) => { day.name = e.target.value; S.savePlan(p); } }));
 
